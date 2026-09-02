@@ -55,80 +55,149 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+
+    /* Dynamic viewport mode adaptors */
+    .mode-pc #stageCard {
+      aspect-ratio: 16 / 9;
+      max-height: 780px;
+      min-height: 540px;
+    }
+    .mode-mobile #stageCard {
+      aspect-ratio: auto;
+      min-height: 82vh;
+      padding: 1.25rem;
+    }
+    .mode-mobile .mobile-compact-text {
+      font-size: 0.82rem;
+      line-height: 1.35;
+    }
+    .mode-mobile .mobile-hide {
+      display: none !important;
+    }
   </style>
 </head>
-<body class="min-h-screen text-slate-800 flex flex-col antialiased selection:bg-blue-500 selection:text-white">
+<body class="min-h-screen text-slate-800 flex flex-col antialiased selection:bg-blue-500 selection:text-white mode-pc">
+
+  <!-- First Load Device Selection Modal -->
+  <div id="deviceModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 transition-opacity duration-300">
+    <div class="glass-card bg-white/95 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-slate-200 text-center relative animate-in fade-in zoom-in-95 duration-200">
+      <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center mb-3.5 shadow-sm">
+        <i data-lucide="devices" class="w-6 h-6"></i>
+      </div>
+      <span class="text-[11px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">Display Setup</span>
+      <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-2">Choose Your Experience</h2>
+      <p class="text-xs sm:text-sm text-slate-500 mt-1.5 leading-relaxed">
+        Select your viewing environment to automatically calibrate typography, layouts, and slide proportions.
+      </p>
+
+      <div class="grid grid-cols-2 gap-3 mt-6">
+        <button onclick="applyDeviceMode('pc')" class="group p-4 rounded-2xl border-2 border-slate-200 hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/50 transition text-left flex flex-col justify-between">
+          <div class="flex items-center justify-between w-full mb-3">
+            <i data-lucide="monitor" class="w-5 h-5 text-slate-600 group-hover:text-blue-600"></i>
+            <span class="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border">16:9</span>
+          </div>
+          <div>
+            <div class="font-bold text-slate-900 text-sm">Computer / TV</div>
+            <div class="text-[11px] text-slate-500">Wide 16:9 studio presentation</div>
+          </div>
+        </button>
+
+        <button onclick="applyDeviceMode('mobile')" class="group p-4 rounded-2xl border-2 border-slate-200 hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/50 transition text-left flex flex-col justify-between">
+          <div class="flex items-center justify-between w-full mb-3">
+            <i data-lucide="smartphone" class="w-5 h-5 text-slate-600 group-hover:text-blue-600"></i>
+            <span class="text-[10px] font-mono text-slate-400 bg-white px-1.5 py-0.5 rounded border">Auto</span>
+          </div>
+          <div>
+            <div class="font-bold text-slate-900 text-sm">Smartphone / Tab</div>
+            <div class="text-[11px] text-slate-500">Touch friendly, compact cards</div>
+          </div>
+        </button>
+      </div>
+
+      <div class="mt-4 text-[11px] text-slate-400 flex items-center justify-center gap-1.5">
+        <i data-lucide="info" class="w-3.5 h-3.5"></i>
+        <span>Auto-detected: <strong id="detectedType" class="text-slate-600">Checking...</strong></span>
+      </div>
+    </div>
+  </div>
 
   <!-- Top App Navigation Header -->
-  <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-6 py-3.5 flex items-center justify-between">
-    <div class="flex items-center gap-3">
-      <div class="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20 shrink-0">
-        <i data-lucide="server" class="w-5 h-5"></i>
+  <header class="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 py-2.5 sm:py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-2.5 sm:gap-3">
+      <div class="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold shadow-md shadow-blue-500/20 shrink-0">
+        <i data-lucide="server" class="w-4 h-4 sm:w-5 sm:h-5"></i>
       </div>
       <div>
         <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Interactive Canvas</span>
-          <span class="text-xs text-slate-400 font-medium hidden sm:inline">13-Minute Master Flow</span>
+          <span class="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">Interactive Canvas</span>
+          <span id="activeModeBadge" class="text-[10px] text-slate-500 font-medium bg-slate-100 px-1.5 py-0.5 rounded border">PC Mode</span>
         </div>
-        <h1 class="text-sm md:text-base font-bold text-slate-900 leading-tight">Build Your Own Private Streaming Server (100% Free)</h1>
+        <h1 class="text-xs sm:text-base font-bold text-slate-900 leading-tight truncate max-w-[200px] sm:max-w-none">Private Streaming Server</h1>
       </div>
     </div>
 
     <!-- Channel Branding & Mode Toggles -->
-    <div class="flex items-center gap-3">
-      <a href="https://youtube.com/@Techspines?sub_confirmation=1" target="_blank" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold border border-red-200/60 shadow-xs transition">
-        <i data-lucide="youtube" class="w-4 h-4"></i>
-        <span>Subscribe: @Techspines</span>
+    <div class="flex items-center gap-2 sm:gap-3">
+      <button onclick="openDeviceSwitcher()" title="Switch Device View" class="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-medium transition">
+        <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Device</span>
+      </button>
+
+      <a href="https://youtube.com/@Techspines?sub_confirmation=1" target="_blank" class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-[11px] sm:text-xs font-semibold border border-red-200/60 shadow-xs transition">
+        <i data-lucide="youtube" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
+        <span class="hidden sm:inline">Subscribe: @Techspines</span>
+        <span class="sm:hidden">Subscribe</span>
       </a>
-      <button onclick="togglePresenterMode()" title="Toggle Fullscreen" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition">
+      
+      <button onclick="togglePresenterMode()" title="Toggle Fullscreen" class="p-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition hidden sm:flex">
         <i data-lucide="maximize" class="w-4 h-4"></i>
       </button>
     </div>
   </header>
 
   <!-- Main Presentation Workspace -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 flex flex-col justify-center items-center">
+  <main class="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 md:p-8 flex flex-col justify-center items-center">
     
-    <!-- 16:9 Presentation Stage Card -->
-    <div class="w-full aspect-[16/9] max-h-[800px] glass-card rounded-3xl p-6 md:p-10 relative flex flex-col justify-between overflow-hidden shadow-2xl transition-all border border-slate-200/80">
+    <!-- Presentation Stage Card with ID for Mode Switching -->
+    <div id="stageCard" class="w-full glass-card rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 relative flex flex-col justify-between overflow-hidden shadow-2xl transition-all border border-slate-200/80">
       
       <!-- Ambient Studio Glow in Background -->
       <div class="absolute -top-24 -right-24 w-96 h-96 bg-blue-100/60 rounded-full blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-50/60 rounded-full blur-3xl pointer-events-none"></div>
 
       <!-- Slide Viewport (Injected via JS) -->
-      <div id="slideContent" class="h-full flex flex-col justify-between relative z-10">
+      <div id="slideContent" class="h-full flex flex-col justify-between relative z-10 overflow-y-auto hide-scrollbar">
         <!-- Content gets rendered here -->
       </div>
     </div>
 
-    <!-- External Control Bar: Positioned in the clean space outside the slide card -->
-    <div class="w-full max-w-5xl mt-5 px-6 py-3 glass-card rounded-2xl flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 shadow-md border border-slate-200/80">
+    <!-- External Control Bar: Clean space outside the slide card -->
+    <div class="w-full max-w-5xl mt-3 sm:mt-5 px-3 sm:px-6 py-2.5 sm:py-3 glass-card rounded-xl sm:rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500 shadow-md border border-slate-200/80">
       <!-- Left: Category & Timing -->
-      <div class="flex items-center gap-3">
-        <span class="flex items-center gap-1.5 font-semibold text-slate-700">
-          <i data-lucide="layers" class="w-4 h-4 text-blue-600"></i>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <span class="flex items-center gap-1.5 font-semibold text-slate-700 truncate max-w-[150px] sm:max-w-none">
+          <i data-lucide="layers" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600 shrink-0"></i>
           <span id="slideCategory">Introduction & Proposition</span>
         </span>
         <span class="text-slate-300">•</span>
-        <span class="font-medium text-slate-500 bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200/60" id="timeEst">0:00 - 1:45</span>
+        <span class="font-medium text-slate-500 bg-slate-100 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-lg border border-slate-200/60 text-[11px]" id="timeEst">0:00 - 1:45</span>
       </div>
 
       <!-- Center: Slide Navigation Switcher -->
-      <div class="flex items-center gap-2 bg-slate-100/90 px-3 py-1.5 rounded-2xl border border-slate-200 shadow-xs">
-        <button id="prevBtn" onclick="prevSlide()" class="p-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs transition disabled:opacity-40 disabled:cursor-not-allowed">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i>
+      <div class="flex items-center gap-1.5 sm:gap-2 bg-slate-100/90 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs ml-auto sm:ml-0">
+        <button id="prevBtn" onclick="prevSlide()" class="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs transition disabled:opacity-40 disabled:cursor-not-allowed">
+          <i data-lucide="chevron-left" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
         </button>
-        <div class="px-3 text-xs font-semibold text-slate-700 min-w-[85px] text-center select-none">
-          Slide <span id="currentSlideNum" class="text-blue-600 font-bold text-sm">1</span> of <span id="totalSlidesNum" class="font-bold">10</span>
+        <div class="px-1.5 sm:px-3 text-[11px] sm:text-xs font-semibold text-slate-700 min-w-[70px] sm:min-w-[85px] text-center select-none">
+          <span id="currentSlideNum" class="text-blue-600 font-bold text-xs sm:text-sm">1</span> / <span id="totalSlidesNum" class="font-bold">10</span>
         </div>
-        <button id="nextBtn" onclick="nextSlide()" class="p-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs transition disabled:opacity-40 disabled:cursor-not-allowed">
-          <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        <button id="nextBtn" onclick="nextSlide()" class="p-1 sm:p-1.5 rounded-lg sm:rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-xs transition disabled:opacity-40 disabled:cursor-not-allowed">
+          <i data-lucide="chevron-right" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
         </button>
       </div>
 
       <!-- Right: Techspines Production Guide Badge -->
-      <div class="flex items-center gap-2">
+      <div class="hidden md:flex items-center gap-2">
         <div class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-semibold flex items-center gap-2 text-[11px] border border-slate-200/80">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
           @Techspines Production Guide
@@ -147,43 +216,43 @@
         title: "WELCOME TO TECHSPINES",
         subtitle: "Build Your Own Private Streaming Server (100% Free)",
         render: () => `
-          <div class="flex flex-col items-center justify-center text-center my-auto">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-semibold mb-5 border border-blue-100 shadow-xs">
+          <div class="flex flex-col items-center justify-center text-center my-auto py-2">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-[11px] sm:text-xs font-semibold mb-3 sm:mb-5 border border-blue-100 shadow-xs">
               <i data-lucide="sparkles" class="w-3.5 h-3.5"></i>
-              No Subscriptions • No Ad Trackers • Complete Data Privacy
+              No Subscriptions • No Ads • 100% Private
             </div>
             
-            <h2 class="text-3xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight max-w-4xl leading-tight">
+            <h2 class="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight max-w-4xl leading-tight">
               BUILD YOUR OWN <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">PRIVATE STREAMING</span> SERVER
             </h2>
             
-            <p class="mt-4 text-base md:text-lg text-slate-600 max-w-2xl">
-              Turn any idle laptop into a dedicated 24/7 personal Netflix. Stream all your movies and series to your TV, phone, and tablet without paying a single monthly cloud fee.
+            <p class="mt-2.5 sm:mt-4 text-xs sm:text-base md:text-lg text-slate-600 max-w-2xl leading-relaxed">
+              Turn any idle laptop into a dedicated 24/7 personal Netflix. Stream movies and series to your TV, phone, and tablet without monthly cloud fees.
             </p>
 
-            <div class="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
-              <div class="bg-white/80 border border-slate-200/80 p-4 rounded-2xl shadow-xs text-left">
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 font-bold text-sm">
+            <div class="mt-5 sm:mt-8 grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-4 w-full max-w-2xl">
+              <div class="bg-white/80 border border-slate-200/80 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-xs text-left">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5 font-bold text-xs sm:text-sm">
                   $0
                 </div>
-                <h4 class="font-bold text-slate-800 text-sm">Zero Monthly Subscriptions</h4>
-                <p class="text-xs text-slate-500 mt-0.5">Save $800+ every single year on 5+ apps.</p>
+                <h4 class="font-bold text-slate-800 text-xs sm:text-sm">Zero Monthly Subscriptions</h4>
+                <p class="text-[11px] text-slate-500 mt-0.5">Save $800+ every single year on 5+ apps.</p>
               </div>
 
-              <div class="bg-white/80 border border-slate-200/80 p-4 rounded-2xl shadow-xs text-left">
-                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-2 font-bold text-sm">
+              <div class="bg-white/80 border border-slate-200/80 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-xs text-left">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5 font-bold text-xs sm:text-sm">
                   4K
                 </div>
                 <h4 class="font-bold text-slate-800 text-sm">Zero License Removals</h4>
-                <p class="text-xs text-slate-500 mt-0.5">Your shows stay yours. Full 4K HDR playback.</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Your shows stay yours. Full 4K HDR playback.</p>
               </div>
 
-              <div class="bg-white/80 border border-slate-200/80 p-4 rounded-2xl shadow-xs text-left">
-                <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 font-bold text-sm">
-                  <i data-lucide="shield-check" class="w-4 h-4"></i>
+              <div class="bg-white/80 border border-slate-200/80 p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-xs text-left">
+                <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-1.5 font-bold text-xs sm:text-sm">
+                  <i data-lucide="shield-check" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
                 </div>
-                <h4 class="font-bold text-slate-800 text-sm">Complete Privacy</h4>
-                <p class="text-xs text-slate-500 mt-0.5">Local network only. Zero telemetry.</p>
+                <h4 class="font-bold text-slate-800 text-xs sm:text-sm">Complete Privacy</h4>
+                <p class="text-[11px] text-slate-500 mt-0.5">Local network only. Zero telemetry.</p>
               </div>
             </div>
           </div>
@@ -196,62 +265,62 @@
         title: "STEP 1: THE IDLE HARDWARE FOUNDATION",
         subtitle: "Why an Old Laptop Beats a $2,000 Rack Server",
         render: () => `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-auto items-center">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 my-auto items-center py-2">
             <div>
-              <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Hardware Strategy</span>
-              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">Repurpose What You Already Own</h2>
-              <p class="text-slate-600 text-sm mt-3 leading-relaxed">
-                Most people assume you need enterprise server hardware. An old 2017–2022 dual-core or quad-core laptop is actually the best budget server money can buy.
+              <span class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">Hardware Strategy</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mt-0.5">Repurpose What You Already Own</h2>
+              <p class="text-slate-600 text-xs sm:text-sm mt-2 leading-relaxed">
+                An old dual-core or quad-core laptop is the best budget server money can buy thanks to integrated displays and battery backups.
               </p>
 
-              <div class="space-y-3 mt-6">
-                <div class="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-                  <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <i data-lucide="battery-charging" class="w-4 h-4"></i>
+              <div class="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
+                <div class="flex items-start gap-2.5 sm:gap-3 bg-white p-2.5 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <i data-lucide="battery-charging" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
                   </div>
                   <div>
-                    <h4 class="text-sm font-semibold text-slate-800">The Built-In "Free UPS" Battery</h4>
-                    <p class="text-xs text-slate-500">During a power cut, desktop servers immediately crash. A laptop's battery keeps the system online and protects databases.</p>
+                    <h4 class="text-xs sm:text-sm font-semibold text-slate-800">The Built-In "Free UPS" Battery</h4>
+                    <p class="text-[11px] text-slate-500">During a power cut, desktop servers immediately crash. A laptop's battery keeps databases safe.</p>
                   </div>
                 </div>
 
-                <div class="flex items-start gap-3 bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-                  <div class="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
-                    <i data-lucide="zap" class="w-4 h-4"></i>
+                <div class="flex items-start gap-2.5 sm:gap-3 bg-white p-2.5 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
+                  <div class="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
+                    <i data-lucide="zap" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i>
                   </div>
                   <div>
-                    <h4 class="text-sm font-semibold text-slate-800">Ultra-Low Power Draw</h4>
-                    <p class="text-xs text-slate-500">Idles at 8W - 18W. Adds less than $1-$2 per month to your electric bill running 24/7.</p>
+                    <h4 class="text-xs sm:text-sm font-semibold text-slate-800">Ultra-Low Power Draw</h4>
+                    <p class="text-[11px] text-slate-500">Idles at 8W - 18W. Adds less than $1-$2 per month to your electric bill running 24/7.</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <!-- Specs Matrix Box -->
-            <div class="bg-slate-50/80 border border-slate-200 p-6 rounded-2xl">
-              <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2 mb-4">
-                <i data-lucide="sliders" class="w-4 h-4 text-blue-600"></i> Recommended Baseline Hardware
+            <div class="bg-slate-50/80 border border-slate-200 p-4 sm:p-6 rounded-xl sm:rounded-2xl">
+              <h3 class="font-bold text-slate-900 text-xs sm:text-sm flex items-center gap-2 mb-2 sm:mb-4">
+                <i data-lucide="sliders" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600"></i> Recommended Baseline Hardware
               </h3>
-              <div class="space-y-3 text-xs">
-                <div class="flex justify-between py-2 border-b border-slate-200">
-                  <span class="text-slate-500 font-medium">Processor (CPU)</span>
-                  <span class="font-semibold text-slate-800">Intel Core 6th Gen+ or AMD Ryzen (with iGPU)</span>
+              <div class="space-y-2 sm:space-y-3 text-[11px] sm:text-xs">
+                <div class="flex justify-between py-1.5 border-b border-slate-200">
+                  <span class="text-slate-500 font-medium">CPU</span>
+                  <span class="font-semibold text-slate-800 text-right">Intel 6th Gen+ or Ryzen (with iGPU)</span>
                 </div>
-                <div class="flex justify-between py-2 border-b border-slate-200">
-                  <span class="text-slate-500 font-medium">System RAM</span>
-                  <span class="font-semibold text-slate-800">8GB DDR4 (Minimum 4GB)</span>
+                <div class="flex justify-between py-1.5 border-b border-slate-200">
+                  <span class="text-slate-500 font-medium">RAM</span>
+                  <span class="font-semibold text-slate-800">8GB DDR4 (Min 4GB)</span>
                 </div>
-                <div class="flex justify-between py-2 border-b border-slate-200">
-                  <span class="text-slate-500 font-medium">System Drive (OS)</span>
-                  <span class="font-semibold text-slate-800">120GB SSD for instant boot & DB caching</span>
+                <div class="flex justify-between py-1.5 border-b border-slate-200">
+                  <span class="text-slate-500 font-medium">OS Drive</span>
+                  <span class="font-semibold text-slate-800">120GB SSD for boot</span>
                 </div>
-                <div class="flex justify-between py-2 border-b border-slate-200">
+                <div class="flex justify-between py-1.5 border-b border-slate-200">
                   <span class="text-slate-500 font-medium">Media Storage</span>
-                  <span class="font-semibold text-slate-800">1TB - 4TB External USB 3.0 HDD / SSD</span>
+                  <span class="font-semibold text-slate-800">1TB - 4TB External USB</span>
                 </div>
-                <div class="flex justify-between py-2">
-                  <span class="text-slate-500 font-medium">Network Link</span>
-                  <span class="font-semibold text-emerald-600">Gigabit Ethernet to Main Router (Avoid Wi-Fi)</span>
+                <div class="flex justify-between py-1.5">
+                  <span class="text-slate-500 font-medium">Network</span>
+                  <span class="font-semibold text-emerald-600">Gigabit Ethernet</span>
                 </div>
               </div>
             </div>
@@ -265,47 +334,47 @@
         title: "STEP 2: PREVENT SYSTEM SLEEP (LID TWEAK)",
         subtitle: "How to Keep Windows/Linux Running 24/7 with the Screen Closed",
         render: () => `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-auto items-center">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 my-auto items-center py-2">
             <div>
-              <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Configuration Check</span>
-              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">The "Lid Closed" Essential Setting</h2>
-              <p class="text-slate-600 text-sm mt-3 leading-relaxed">
-                By default, laptops enter Sleep Mode the second you close the screen. We need the screen off to save power, but the processor running 24/7.
+              <span class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">Configuration Check</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mt-0.5">The "Lid Closed" Essential Setting</h2>
+              <p class="text-slate-600 text-xs sm:text-sm mt-2 leading-relaxed">
+                By default, laptops sleep when you close the screen. We need the display off, but the processor running 24/7.
               </p>
 
-              <div class="mt-5 space-y-2 text-xs">
-                <div class="p-3 bg-white rounded-xl border border-slate-200 font-medium text-slate-700 flex items-center gap-3 shadow-xs">
-                  <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">1</span>
-                  <span>Open <strong>Control Panel</strong> ➔ <strong>Hardware and Sound</strong> ➔ <strong>Power Options</strong>.</span>
+              <div class="mt-3 sm:mt-5 space-y-2 text-[11px] sm:text-xs">
+                <div class="p-2.5 sm:p-3 bg-white rounded-xl border border-slate-200 font-medium text-slate-700 flex items-center gap-2.5 shadow-xs">
+                  <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold shrink-0">1</span>
+                  <span><strong>Control Panel</strong> ➔ <strong>Hardware & Sound</strong> ➔ <strong>Power Options</strong>.</span>
                 </div>
-                <div class="p-3 bg-white rounded-xl border border-slate-200 font-medium text-slate-700 flex items-center gap-3 shadow-xs">
-                  <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">2</span>
-                  <span>Click <strong>"Choose what closing the lid does"</strong> in left navigation.</span>
+                <div class="p-2.5 sm:p-3 bg-white rounded-xl border border-slate-200 font-medium text-slate-700 flex items-center gap-2.5 shadow-xs">
+                  <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold shrink-0">2</span>
+                  <span>Click <strong>"Choose what closing the lid does"</strong> on left.</span>
                 </div>
-                <div class="p-3 bg-white rounded-xl border border-blue-200 bg-blue-50/50 font-medium text-blue-900 flex items-center gap-3 shadow-xs">
-                  <span class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">3</span>
-                  <span>Set <strong>"When I close the lid" (Plugged In)</strong> to <strong class="text-blue-700 underline underline-offset-2">"Do nothing"</strong>.</span>
+                <div class="p-2.5 sm:p-3 bg-white rounded-xl border border-blue-200 bg-blue-50/50 font-medium text-blue-900 flex items-center gap-2.5 shadow-xs">
+                  <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold shrink-0">3</span>
+                  <span>Set <strong>"When I close the lid"</strong> to <strong class="text-blue-700 underline underline-offset-2">"Do nothing"</strong>.</span>
                 </div>
               </div>
             </div>
 
-            <!-- Visual Warning / Comparison -->
-            <div class="space-y-4">
-              <div class="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-xs">
-                <div class="flex items-center gap-2 text-rose-700 font-bold text-sm mb-1">
-                  <i data-lucide="alert-triangle" class="w-4 h-4"></i> The Costly Rookie Mistake
+            <!-- Warning / Best Practice -->
+            <div class="space-y-3 sm:space-y-4">
+              <div class="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-rose-50 border border-rose-200 text-[11px] sm:text-xs">
+                <div class="flex items-center gap-2 text-rose-700 font-bold mb-1">
+                  <i data-lucide="alert-triangle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> The Costly Rookie Mistake
                 </div>
                 <p class="text-rose-600 leading-relaxed">
-                  Forgetting this setting means the instant you fold the laptop to slide it on a shelf, your server disconnects and shuts down active movie streams for everyone in the house.
+                  Forgetting this setting means the moment you fold the laptop, your server shuts down all active streams.
                 </p>
               </div>
 
-              <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs">
-                <div class="flex items-center gap-2 text-emerald-800 font-bold text-sm mb-1">
-                  <i data-lucide="check-circle" class="w-4 h-4"></i> Pro-Tip: Battery Health Guard
+              <div class="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-emerald-50 border border-emerald-200 text-[11px] sm:text-xs">
+                <div class="flex items-center gap-2 text-emerald-800 font-bold mb-1">
+                  <i data-lucide="check-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> Battery Health Guard
                 </div>
                 <p class="text-emerald-700 leading-relaxed">
-                  Open your laptop maker's app (Dell Power Manager, Lenovo Vantage, ASUS MyASUS) and turn on <strong>"Primarily AC Use"</strong> or set a 60%–80% maximum charge threshold. This prevents battery swelling over years of continuous plug-in operation!
+                  Enable <strong>"Primarily AC Use"</strong> or cap charging to 70%–80% in Dell/Lenovo/ASUS apps to prevent battery swelling.
                 </p>
               </div>
             </div>
@@ -319,46 +388,42 @@
         title: "STEP 3: DIRECTORY RULES (THE SCRAPER SYSTEM)",
         subtitle: "How to Name Folders So Posters & Cast Details Download Automatically",
         render: () => `
-          <div class="my-auto flex flex-col justify-center">
-            <div class="text-center max-w-2xl mx-auto mb-6">
-              <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Metadata Architecture</span>
-              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">Computers Are Literal: Follow Naming Rules</h2>
-              <p class="text-slate-600 text-xs md:text-sm mt-1">If your files have sloppy torrent names, your server will fail to scrape posters and ratings.</p>
+          <div class="my-auto flex flex-col justify-center py-2">
+            <div class="text-center max-w-2xl mx-auto mb-3 sm:mb-6">
+              <span class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">Metadata Architecture</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mt-0.5">Computers Are Literal: Follow Naming Rules</h2>
+              <p class="text-slate-600 text-xs mt-1">Messy filenames break automated poster and subtitle scrapers.</p>
             </div>
 
-            <!-- Side by Side Wrong vs Right -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6">
               <!-- Wrong Column -->
-              <div class="p-5 rounded-2xl bg-red-50/70 border border-red-200/80">
-                <div class="flex items-center justify-between pb-3 border-b border-red-200">
-                  <span class="font-bold text-red-700 text-sm flex items-center gap-1.5">
-                    <i data-lucide="x-circle" class="w-4 h-4"></i> WRONG: Fails Scraper
+              <div class="p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-red-50/70 border border-red-200/80">
+                <div class="flex items-center justify-between pb-2 border-b border-red-200">
+                  <span class="font-bold text-red-700 text-xs sm:text-sm flex items-center gap-1.5">
+                    <i data-lucide="x-circle" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> WRONG: Fails Scraper
                   </span>
-                  <span class="text-[11px] font-mono text-red-500 uppercase font-semibold">Messy Filenames</span>
+                  <span class="text-[10px] font-mono text-red-500 uppercase font-semibold">Messy</span>
                 </div>
-                <div class="mt-4 space-y-2.5 text-xs font-mono text-red-700">
-                  <div class="p-2.5 rounded-lg bg-red-100/70 truncate">dune.2.2024.1080p.webrip.x264.mkv</div>
-                  <div class="p-2.5 rounded-lg bg-red-100/70 truncate">breaking_bad_s01e01_720p_final.avi</div>
-                  <div class="p-2.5 rounded-lg bg-red-100/70 truncate">random_movie_uncompressed.mp4</div>
+                <div class="mt-3 space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs font-mono text-red-700">
+                  <div class="p-2 rounded-lg bg-red-100/70 truncate">dune.2.2024.1080p.webrip.x264.mkv</div>
+                  <div class="p-2 rounded-lg bg-red-100/70 truncate">breaking_bad_s01e01_720p_final.avi</div>
                 </div>
-                <p class="text-xs text-red-600 mt-3">Results in missing posters, incorrect titles, and broken season indexing.</p>
+                <p class="text-[11px] text-red-600 mt-2">Causes blank posters and missing episode information.</p>
               </div>
 
               <!-- Right Column -->
-              <div class="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
-                <div class="flex items-center justify-between pb-3 border-b border-emerald-200">
-                  <span class="font-bold text-emerald-800 text-sm flex items-center gap-1.5">
-                    <i data-lucide="check-circle-2" class="w-4 h-4"></i> RIGHT: 100% TMDb Match
+              <div class="p-3 sm:p-5 rounded-xl sm:rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+                <div class="flex items-center justify-between pb-2 border-b border-emerald-200">
+                  <span class="font-bold text-emerald-800 text-xs sm:text-sm flex items-center gap-1.5">
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5 sm:w-4 sm:h-4"></i> RIGHT: 100% TMDb Match
                   </span>
-                  <span class="text-[11px] font-mono text-emerald-600 uppercase font-semibold">Clean Hierarchy</span>
+                  <span class="text-[10px] font-mono text-emerald-600 uppercase font-semibold">Clean</span>
                 </div>
-                <div class="mt-4 space-y-2.5 text-xs font-mono text-emerald-900">
-                  <div class="p-2.5 rounded-lg bg-emerald-100/70 truncate">/Movies/Dune Part Two (2024)/Dune Part Two (2024).mkv</div>
-                  <div class="p-2.5 rounded-lg bg-emerald-100/70 truncate">/TV Shows/Breaking Bad (2008)/Season 01/Breaking Bad - S01E01.mkv</div>
-                  <div class="p-2.5 rounded-lg bg-emerald-100/70 truncate">/Movies/The Matrix (1999)/The Matrix (1999).mkv</div>
+                <div class="mt-3 space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs font-mono text-emerald-900">
+                  <div class="p-2 rounded-lg bg-emerald-100/70 truncate">/Movies/Dune Part Two (2024)/Dune Part Two (2024).mkv</div>
+                  <div class="p-2 rounded-lg bg-emerald-100/70 truncate">/TV Shows/Breaking Bad (2008)/Season 01/Breaking Bad - S01E01.mkv</div>
                 </div>
-                <p class="text-xs text-emerald-700 mt-3">Instantly downloads 4K box art, synopsis, cast lists, IMDb ratings, and subtitles.</p>
+                <p class="text-[11px] text-emerald-700 mt-2">Instantly downloads 4K box art, synopsis, cast lists & IMDb ratings.</p>
               </div>
             </div>
           </div>
@@ -371,51 +436,49 @@
         title: "STEP 4: CHOOSING YOUR ENGINE",
         subtitle: "Jellyfin (FOSS) vs. Plex (Commercial)",
         render: () => `
-          <div class="my-auto">
-            <div class="text-center max-w-xl mx-auto mb-6">
-              <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Platform Comparison</span>
-              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">Which Server Should You Run?</h2>
+          <div class="my-auto py-2">
+            <div class="text-center max-w-xl mx-auto mb-4 sm:mb-6">
+              <span class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">Platform Comparison</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mt-0.5">Which Server Should You Run?</h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 max-w-4xl mx-auto">
               <!-- Jellyfin Card -->
-              <div class="p-6 rounded-2xl bg-white border-2 border-blue-500 shadow-lg relative">
-                <div class="absolute -top-3 right-4 px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold uppercase tracking-wider">
+              <div class="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white border-2 border-blue-500 shadow-md relative">
+                <div class="absolute -top-3 right-3 sm:right-4 px-2 py-0.5 rounded-full bg-blue-600 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider">
                   Techspines Choice
                 </div>
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                    <i data-lucide="unlock" class="w-5 h-5"></i>
+                <div class="flex items-center gap-2.5 sm:gap-3 mb-3">
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0">
+                    <i data-lucide="unlock" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                   </div>
                   <div>
-                    <h3 class="font-bold text-slate-900 text-base">Jellyfin</h3>
-                    <span class="text-xs text-slate-400">100% Free & Open-Source (FOSS)</span>
+                    <h3 class="font-bold text-slate-900 text-sm sm:text-base">Jellyfin</h3>
+                    <span class="text-[11px] text-slate-400">100% Free & Open-Source (FOSS)</span>
                   </div>
                 </div>
-                <ul class="space-y-2.5 text-xs text-slate-600">
-                  <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Zero subscriptions, zero paywalls ever.</li>
-                  <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> <strong>Free Hardware Transcoding (Intel QSV/NVENC)</strong>.</li>
-                  <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Completely local accounts (zero tracking).</li>
-                  <li class="flex items-center gap-2 text-slate-400"><i data-lucide="info" class="w-4 h-4 text-slate-400"></i> Requires a mesh VPN (Tailscale) for remote streaming.</li>
+                <ul class="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs text-slate-600">
+                  <li class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 shrink-0"></i> Zero subscriptions, zero paywalls.</li>
+                  <li class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 shrink-0"></i> <strong>Free Hardware Transcoding (Intel QSV)</strong>.</li>
+                  <li class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 shrink-0"></i> Completely local accounts (zero tracking).</li>
                 </ul>
               </div>
 
               <!-- Plex Card -->
-              <div class="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                <div class="flex items-center gap-3 mb-4">
-                  <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
-                    <i data-lucide="tv" class="w-5 h-5"></i>
+              <div class="p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white border border-slate-200 shadow-xs">
+                <div class="flex items-center gap-2.5 sm:gap-3 mb-3">
+                  <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold shrink-0">
+                    <i data-lucide="tv" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                   </div>
                   <div>
-                    <h3 class="font-bold text-slate-900 text-base">Plex</h3>
-                    <span class="text-xs text-slate-400">Commercial / Freemium</span>
+                    <h3 class="font-bold text-slate-900 text-sm sm:text-base">Plex</h3>
+                    <span class="text-[11px] text-slate-400">Commercial / Freemium</span>
                   </div>
                 </div>
-                <ul class="space-y-2.5 text-xs text-slate-600">
-                  <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Plug-and-play setup for non-tech users.</li>
-                  <li class="flex items-center gap-2"><i data-lucide="check" class="w-4 h-4 text-emerald-500"></i> Built-in remote access out of the box.</li>
-                  <li class="flex items-center gap-2 text-rose-500"><i data-lucide="x" class="w-4 h-4 text-rose-500"></i> Hardware Transcoding locked behind $120 "Plex Pass".</li>
-                  <li class="flex items-center gap-2 text-rose-500"><i data-lucide="x" class="w-4 h-4 text-rose-500"></i> Centralized login (Plex tracks viewing metadata).</li>
+                <ul class="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs text-slate-600">
+                  <li class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald-500 shrink-0"></i> Plug-and-play setup for non-tech users.</li>
+                  <li class="flex items-center gap-1.5 text-rose-500"><i data-lucide="x" class="w-3.5 h-3.5 text-rose-500 shrink-0"></i> Hardware Transcoding locked behind $120 pass.</li>
+                  <li class="flex items-center gap-1.5 text-rose-500"><i data-lucide="x" class="w-3.5 h-3.5 text-rose-500 shrink-0"></i> Centralized login tracks viewing metadata.</li>
                 </ul>
               </div>
             </div>
@@ -429,44 +492,44 @@
         title: "STEP 5: JELLYFIN INSTALLATION & FIRST BOOT",
         subtitle: "Setting up the Host Daemon and Initial Configuration Wizard",
         render: () => `
-          <div class="my-auto max-w-4xl mx-auto w-full">
-            <div class="mb-6">
-              <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Installation Pipeline</span>
-              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">Get the Server Running in 3 Minutes</h2>
+          <div class="my-auto max-w-4xl mx-auto w-full py-2">
+            <div class="mb-3 sm:mb-6">
+              <span class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">Installation Pipeline</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mt-0.5">Get the Server Running in 3 Minutes</h2>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div class="bg-white p-4 rounded-xl border border-slate-200 text-xs space-y-2">
-                <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 font-bold flex items-center justify-center">1</span>
-                <h4 class="font-bold text-slate-800 text-sm">Download Binary</h4>
-                <p class="text-slate-500 leading-relaxed">Download official Windows installer (.exe) or run on Ubuntu/Docker via command-line.</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+              <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-xs">1</span>
+                <h4 class="font-bold text-slate-800 text-xs sm:text-sm">Download Binary</h4>
+                <p class="text-slate-500 text-[11px]">Download official Windows installer (.exe) or Ubuntu repo script.</p>
               </div>
 
-              <div class="bg-white p-4 rounded-xl border border-slate-200 text-xs space-y-2">
-                <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 font-bold flex items-center justify-center">2</span>
-                <h4 class="font-bold text-slate-800 text-sm">Windows Service</h4>
-                <p class="text-slate-500 leading-relaxed">Check <strong>"Install as a Service"</strong>. This ensures Jellyfin starts even if nobody logs into Windows.</p>
+              <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-xs">2</span>
+                <h4 class="font-bold text-slate-800 text-xs sm:text-sm">Windows Service</h4>
+                <p class="text-slate-500 text-[11px]">Check <strong>"Install as a Service"</strong> so it boots automatically.</p>
               </div>
 
-              <div class="bg-white p-4 rounded-xl border border-slate-200 text-xs space-y-2">
-                <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 font-bold flex items-center justify-center">3</span>
-                <h4 class="font-bold text-slate-800 text-sm">Open Web UI</h4>
-                <p class="text-slate-500 leading-relaxed">Open Chrome/Edge and go to: <code class="bg-slate-100 p-1 rounded font-mono text-[11px] text-blue-600">http://localhost:8096</code></p>
+              <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-xs">3</span>
+                <h4 class="font-bold text-slate-800 text-xs sm:text-sm">Open Web UI</h4>
+                <p class="text-slate-500 text-[11px]">Open browser to: <code class="bg-slate-100 p-0.5 rounded font-mono text-blue-600">localhost:8096</code></p>
               </div>
 
-              <div class="bg-white p-4 rounded-xl border border-slate-200 text-xs space-y-2">
-                <span class="w-6 h-6 rounded-lg bg-blue-50 text-blue-600 font-bold flex items-center justify-center">4</span>
-                <h4 class="font-bold text-slate-800 text-sm">Add Libraries</h4>
-                <p class="text-slate-500 leading-relaxed">Point "Movies" to your <code class="bg-slate-100 p-0.5 rounded font-mono">/Movies</code> folder and "Shows" to <code class="bg-slate-100 p-0.5 rounded font-mono">/TV Shows</code>.</p>
+              <div class="bg-white p-3 sm:p-4 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                <span class="w-5 h-5 sm:w-6 sm:h-6 rounded-lg bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-xs">4</span>
+                <h4 class="font-bold text-slate-800 text-xs sm:text-sm">Add Libraries</h4>
+                <p class="text-slate-500 text-[11px]">Map Movies to <code class="bg-slate-100 p-0.5 rounded font-mono">/Movies</code> and Shows to <code class="bg-slate-100 p-0.5 rounded font-mono">/TV Shows</code>.</p>
               </div>
             </div>
 
-            <div class="mt-6 p-4 rounded-xl bg-slate-900 text-slate-200 text-xs font-mono flex items-center justify-between">
-              <div class="flex items-center gap-2">
+            <div class="mt-3 sm:mt-6 p-3 sm:p-4 rounded-xl bg-slate-900 text-slate-200 text-[11px] sm:text-xs font-mono flex items-center justify-between">
+              <div class="flex items-center gap-1.5 truncate">
                 <span class="text-emerald-400">root@techspines:~$</span>
-                <span>curl -fsSL https://repo.jellyfin.org/install-debuntu.sh | bash</span>
+                <span class="truncate">curl -fsSL https://repo.jellyfin.org/install-debuntu.sh | bash</span>
               </div>
-              <span class="text-slate-500 text-[10px] uppercase font-bold">Linux / Ubuntu 1-Liner</span>
+              <span class="text-slate-500 text-[9px] uppercase font-bold shrink-0 ml-2">Linux 1-Liner</span>
             </div>
           </div>
         `
@@ -478,51 +541,51 @@
         title: "STEP 6: FREE HARDWARE TRANSCODING (QSV)",
         subtitle: "How to Offload 4K Video Decoding to Intel QuickSync or Nvidia GPUs",
         render: () => `
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 my-auto items-center">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 my-auto items-center py-2">
             <div>
-              <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Performance Optimization</span>
-              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">Unlock Intel QuickSync (QSV)</h2>
-              <p class="text-slate-600 text-sm mt-3 leading-relaxed">
-                What happens when you stream a heavy 4K movie to an older phone on weak Wi-Fi? The server needs to compress it to 1080p in real time. 
+              <span class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">Performance Optimization</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mt-0.5">Unlock Intel QuickSync (QSV)</h2>
+              <p class="text-slate-600 text-xs sm:text-sm mt-2 leading-relaxed">
+                When streaming 4K files to older phones or slower connections, the server compresses video smoothly without lagging.
               </p>
 
-              <div class="mt-5 space-y-2.5 text-xs">
-                <div class="flex items-center gap-2 text-slate-700">
-                  <i data-lucide="chevron-right" class="w-4 h-4 text-blue-500"></i> Go to <strong>Jellyfin Admin Dashboard</strong> ➔ <strong>Playback</strong>.
+              <div class="mt-3 sm:mt-5 space-y-2 text-[11px] sm:text-xs">
+                <div class="flex items-center gap-1.5 text-slate-700">
+                  <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-blue-500"></i> Go to <strong>Jellyfin Dashboard</strong> ➔ <strong>Playback</strong>.
                 </div>
-                <div class="flex items-center gap-2 text-slate-700">
-                  <i data-lucide="chevron-right" class="w-4 h-4 text-blue-500"></i> Set <strong>Hardware Acceleration</strong> to <strong class="text-blue-600">Intel QuickSync (QSV)</strong>.
+                <div class="flex items-center gap-1.5 text-slate-700">
+                  <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-blue-500"></i> Set <strong>Acceleration</strong> to <strong class="text-blue-600">Intel QuickSync (QSV)</strong>.
                 </div>
-                <div class="flex items-center gap-2 text-slate-700">
-                  <i data-lucide="chevron-right" class="w-4 h-4 text-blue-500"></i> Check enabled decoders: <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded">H.264</span> and <span class="font-mono bg-slate-100 px-1.5 py-0.5 rounded">HEVC (H.265)</span>.
+                <div class="flex items-center gap-1.5 text-slate-700">
+                  <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-blue-500"></i> Check: <span class="font-mono bg-slate-100 px-1 py-0.5 rounded">H.264</span> and <span class="font-mono bg-slate-100 px-1 py-0.5 rounded">HEVC (H.265)</span>.
                 </div>
               </div>
             </div>
 
             <!-- CPU vs GPU Benchmark Comparison -->
-            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-5">
+            <div class="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200 shadow-xs space-y-3 sm:space-y-4">
               <div>
-                <div class="flex justify-between text-xs font-semibold mb-1.5">
-                  <span class="text-slate-700">Software Encoding (CPU Only - Bad)</span>
-                  <span class="text-rose-600 font-bold">98% CPU Usage (Laptop Heats Up!)</span>
+                <div class="flex justify-between text-[11px] sm:text-xs font-semibold mb-1">
+                  <span class="text-slate-700">Software Encoding (CPU Only)</span>
+                  <span class="text-rose-600 font-bold">98% (Hot!)</span>
                 </div>
-                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                <div class="w-full bg-slate-100 h-2 sm:h-2.5 rounded-full overflow-hidden">
                   <div class="bg-rose-500 h-full w-[98%] rounded-full"></div>
                 </div>
               </div>
 
               <div>
-                <div class="flex justify-between text-xs font-semibold mb-1.5">
-                  <span class="text-slate-700">Intel QuickSync / NVENC (Hardware - Best)</span>
-                  <span class="text-emerald-600 font-bold">12% CPU Usage (Whisper Quiet)</span>
+                <div class="flex justify-between text-[11px] sm:text-xs font-semibold mb-1">
+                  <span class="text-slate-700">Intel QuickSync (Hardware)</span>
+                  <span class="text-emerald-600 font-bold">12% (Quiet)</span>
                 </div>
-                <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+                <div class="w-full bg-slate-100 h-2 sm:h-2.5 rounded-full overflow-hidden">
                   <div class="bg-emerald-500 h-full w-[12%] rounded-full"></div>
                 </div>
               </div>
 
-              <div class="p-3 bg-blue-50 rounded-xl text-[11px] text-blue-700 leading-relaxed">
-                <strong>Why this is legendary:</strong> Plex locks hardware acceleration behind a paid subscription. In Jellyfin, this feature is 100% unlocked and free for everyone!
+              <div class="p-2.5 sm:p-3 bg-blue-50 rounded-lg sm:rounded-xl text-[10px] sm:text-[11px] text-blue-700 leading-relaxed">
+                <strong>No paywall:</strong> Plex locks hardware acceleration behind a paid plan. In Jellyfin, it is 100% unlocked and free!
               </div>
             </div>
           </div>
@@ -535,36 +598,36 @@
         title: "STEP 7: WATCH ON TV, PHONE & SMART DEVICES",
         subtitle: "Connecting Your Living Room to Your Host Laptop Over Local Wi-Fi",
         render: () => `
-          <div class="my-auto max-w-4xl mx-auto w-full">
-            <div class="text-center mb-8">
-              <span class="text-xs font-bold text-blue-600 uppercase tracking-widest">Multi-Device Playback</span>
-              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">Stream to Any Screen in the House</h2>
-              <p class="text-slate-600 text-xs md:text-sm mt-1">Download the native client application on your target device and log in.</p>
+          <div class="my-auto max-w-4xl mx-auto w-full py-2">
+            <div class="text-center mb-4 sm:mb-8">
+              <span class="text-[10px] sm:text-xs font-bold text-blue-600 uppercase tracking-widest">Multi-Device Playback</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mt-0.5">Stream to Any Screen in the House</h2>
+              <p class="text-slate-600 text-xs mt-1">Download the native client application on your target device and log in.</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center shadow-xs">
-                <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center mb-3">
-                  <i data-lucide="tv" class="w-6 h-6"></i>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-6">
+              <div class="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 text-center shadow-xs">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-indigo-50 text-indigo-600 mx-auto flex items-center justify-center mb-2.5">
+                  <i data-lucide="tv" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                 </div>
-                <h3 class="font-bold text-slate-800 text-sm">Smart TV & FireStick</h3>
-                <p class="text-xs text-slate-500 mt-1">Search for <strong>"Jellyfin"</strong> on Android TV, Google TV, or Fire TV Appstore. Clean 10-foot couch UI with remote control.</p>
+                <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Smart TV & FireStick</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Search for <strong>"Jellyfin"</strong> on Android TV, Google TV, or Fire TV for couch navigation.</p>
               </div>
 
-              <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center shadow-xs">
-                <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center mb-3">
-                  <i data-lucide="smartphone" class="w-6 h-6"></i>
+              <div class="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 text-center shadow-xs">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-50 text-blue-600 mx-auto flex items-center justify-center mb-2.5">
+                  <i data-lucide="smartphone" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                 </div>
-                <h3 class="font-bold text-slate-800 text-sm">iOS & Android Phones</h3>
-                <p class="text-xs text-slate-500 mt-1">Download <strong>Jellyfin Mobile</strong> or <strong>Swiftfin</strong> from the App Store. Supports background audio for podcasts & music.</p>
+                <h3 class="font-bold text-slate-800 text-xs sm:text-sm">iOS & Android Phones</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Install <strong>Jellyfin Mobile</strong> or <strong>Swiftfin</strong> for on-the-go streaming and offline caching.</p>
               </div>
 
-              <div class="bg-white p-5 rounded-2xl border border-slate-200 text-center shadow-xs">
-                <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-3">
-                  <i data-lucide="laptop" class="w-6 h-6"></i>
+              <div class="bg-white p-3.5 sm:p-5 rounded-xl sm:rounded-2xl border border-slate-200 text-center shadow-xs">
+                <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 text-emerald-600 mx-auto flex items-center justify-center mb-2.5">
+                  <i data-lucide="laptop" class="w-5 h-5 sm:w-6 sm:h-6"></i>
                 </div>
-                <h3 class="font-bold text-slate-800 text-sm">Laptops & Desktop Web</h3>
-                <p class="text-xs text-slate-500 mt-1">Simply open any modern web browser on your network and navigate to: <code class="text-blue-600 font-mono text-[11px]">http://[Server-IP]:8096</code></p>
+                <h3 class="font-bold text-slate-800 text-xs sm:text-sm">Laptops & Desktop Web</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Open any modern browser and navigate to: <code class="text-blue-600 font-mono text-[10px]">http://[Server-IP]:8096</code></p>
               </div>
             </div>
           </div>
@@ -577,41 +640,41 @@
         title: "STEP 8: MISTAKES & TROUBLESHOOTING MATRIX",
         subtitle: "How to Fix Common Initial Setup Friction Points",
         render: () => `
-          <div class="my-auto max-w-4xl mx-auto w-full">
-            <div class="mb-5">
-              <span class="text-xs font-bold text-rose-600 uppercase tracking-widest">Troubleshooting Log</span>
-              <h2 class="text-2xl md:text-3xl font-bold text-slate-900 mt-1">Quick Fixes for Common Mistakes</h2>
+          <div class="my-auto max-w-4xl mx-auto w-full py-2">
+            <div class="mb-3 sm:mb-5">
+              <span class="text-[10px] sm:text-xs font-bold text-rose-600 uppercase tracking-widest">Troubleshooting Log</span>
+              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 mt-0.5">Quick Fixes for Common Mistakes</h2>
             </div>
 
-            <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
-              <table class="w-full text-left text-xs">
-                <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase text-[10px] tracking-wider">
+            <div class="bg-white rounded-xl sm:rounded-2xl border border-slate-200 overflow-hidden shadow-xs">
+              <table class="w-full text-left text-[11px] sm:text-xs">
+                <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase text-[9px] sm:text-[10px] tracking-wider">
                   <tr>
-                    <th class="p-3.5">The Problem</th>
-                    <th class="p-3.5">Root Cause</th>
-                    <th class="p-3.5">The Solution</th>
+                    <th class="p-2 sm:p-3.5">The Problem</th>
+                    <th class="p-2 sm:p-3.5 hidden sm:table-cell">Root Cause</th>
+                    <th class="p-2 sm:p-3.5">The Solution</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-slate-600">
                   <tr>
-                    <td class="p-3.5 font-semibold text-slate-800">TV App Can't Find Server</td>
-                    <td class="p-3.5">Windows Firewall set to "Public"</td>
-                    <td class="p-3.5 text-blue-600">Change network profile to "Private Network" in Windows Settings.</td>
+                    <td class="p-2 sm:p-3.5 font-semibold text-slate-800">TV Can't Find Server</td>
+                    <td class="p-2 sm:p-3.5 hidden sm:table-cell">Windows Firewall on "Public"</td>
+                    <td class="p-2 sm:p-3.5 text-blue-600">Switch profile to "Private Network" in Windows Settings.</td>
                   </tr>
                   <tr>
-                    <td class="p-3.5 font-semibold text-slate-800">Movie Shows No Poster</td>
-                    <td class="p-3.5">Missing release year in title</td>
-                    <td class="p-3.5 text-blue-600">Rename folder with (YYYY), click "..." on movie ➔ click "Identify".</td>
+                    <td class="p-2 sm:p-3.5 font-semibold text-slate-800">Movie Shows No Poster</td>
+                    <td class="p-2 sm:p-3.5 hidden sm:table-cell">Missing release year</td>
+                    <td class="p-2 sm:p-3.5 text-blue-600">Rename with (YYYY), then click "Identify" in Jellyfin.</td>
                   </tr>
                   <tr>
-                    <td class="p-3.5 font-semibold text-slate-800">Video Stutters & Buffers</td>
-                    <td class="p-3.5">Server is on 2.4GHz Wi-Fi</td>
-                    <td class="p-3.5 text-blue-600">Plug laptop server into router directly via Ethernet Cat6 cable.</td>
+                    <td class="p-2 sm:p-3.5 font-semibold text-slate-800">Video Stutters & Buffers</td>
+                    <td class="p-2 sm:p-3.5 hidden sm:table-cell">Server on 2.4GHz Wi-Fi</td>
+                    <td class="p-2 sm:p-3.5 text-blue-600">Plug laptop server directly into router with Ethernet.</td>
                   </tr>
                   <tr>
-                    <td class="p-3.5 font-semibold text-slate-800">Server Goes Offline Randomly</td>
-                    <td class="p-3.5">Laptop entered sleep mode</td>
-                    <td class="p-3.5 text-blue-600">Check Step 2: Set "When I close lid" to "Do nothing".</td>
+                    <td class="p-2 sm:p-3.5 font-semibold text-slate-800">Server Offline Randomly</td>
+                    <td class="p-2 sm:p-3.5 hidden sm:table-cell">Laptop entered sleep mode</td>
+                    <td class="p-2 sm:p-3.5 text-blue-600">Set "When I close lid" to "Do nothing" (Step 2).</td>
                   </tr>
                 </tbody>
               </table>
@@ -626,28 +689,28 @@
         title: "THE VERDICT: ZERO SUBSCRIPTIONS. FULL CONTROL.",
         subtitle: "You Now Own a Fully Private Streaming Media Server",
         render: () => `
-          <div class="my-auto text-center max-w-3xl mx-auto">
-            <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white mx-auto flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-4">
-              <i data-lucide="check" class="w-8 h-8"></i>
+          <div class="my-auto text-center max-w-3xl mx-auto py-2">
+            <div class="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white mx-auto flex items-center justify-center shadow-lg shadow-emerald-500/20 mb-3 sm:mb-4">
+              <i data-lucide="check" class="w-6 h-6 sm:w-8 sm:h-8"></i>
             </div>
             
-            <h2 class="text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
-              You Have Officially Defeated Subscription Fatigue!
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 tracking-tight">
+              You Have Defeated Subscription Fatigue!
             </h2>
             
-            <p class="mt-3 text-slate-600 text-sm md:text-base leading-relaxed">
-              You turned an idle laptop into a 24/7 private streaming server. You saved $800+ this year, guaranteed your shows won't be deleted, and took full control of your digital home.
+            <p class="mt-2 sm:mt-3 text-slate-600 text-xs sm:text-sm md:text-base leading-relaxed">
+              You turned an idle laptop into a 24/7 private streaming server. You saved $800+ this year, kept all your movies, and took control of your digital home.
             </p>
 
             <!-- Part 2 Teaser Card -->
-            <div class="mt-6 p-5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-left flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="mt-4 sm:mt-6 p-3.5 sm:p-5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 text-left flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
               <div>
-                <span class="text-[10px] uppercase font-bold tracking-wider text-blue-600 bg-blue-100/60 px-2 py-0.5 rounded-md">Coming in Part 2</span>
-                <h4 class="font-bold text-slate-800 text-sm mt-1">Watch Away from Home with Tailscale (Zero Port Forwarding)</h4>
-                <p class="text-xs text-slate-500 mt-0.5">Stream your home server from hotel Wi-Fi or mobile data securely without exposing router ports.</p>
+                <span class="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-blue-600 bg-blue-100/60 px-2 py-0.5 rounded-md">Coming in Part 2</span>
+                <h4 class="font-bold text-slate-800 text-xs sm:text-sm mt-1">Watch Away from Home with Tailscale (Zero Port Forwarding)</h4>
+                <p class="text-[11px] text-slate-500 mt-0.5">Stream your home server from hotel Wi-Fi securely without exposing router ports.</p>
               </div>
-              <a href="https://youtube.com/@Techspines?sub_confirmation=1" target="_blank" class="shrink-0 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition">
-                <i data-lucide="youtube" class="w-4 h-4"></i> Subscribe to @Techspines
+              <a href="https://youtube.com/@Techspines?sub_confirmation=1" target="_blank" class="shrink-0 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition w-full sm:w-auto justify-center">
+                <i data-lucide="youtube" class="w-4 h-4"></i> Subscribe @Techspines
               </a>
             </div>
           </div>
@@ -656,6 +719,36 @@
     ];
 
     let currentSlide = 0;
+    let userMode = 'pc';
+
+    function detectDevice() {
+      const isMobile = window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      return isMobile ? 'mobile' : 'pc';
+    }
+
+    function openDeviceSwitcher() {
+      document.getElementById('deviceModal').classList.remove('hidden');
+      document.getElementById('detectedType').textContent = detectDevice() === 'mobile' ? 'Mobile / Tablet' : 'Desktop / PC';
+    }
+
+    function applyDeviceMode(mode) {
+      userMode = mode;
+      const body = document.body;
+      const badge = document.getElementById('activeModeBadge');
+      
+      if (mode === 'mobile') {
+        body.classList.remove('mode-pc');
+        body.classList.add('mode-mobile');
+        badge.textContent = 'Mobile Ratio';
+      } else {
+        body.classList.remove('mode-mobile');
+        body.classList.add('mode-pc');
+        badge.textContent = 'PC (16:9)';
+      }
+      
+      document.getElementById('deviceModal').classList.add('hidden');
+      renderSlide(currentSlide);
+    }
 
     function renderSlide(index) {
       const slide = slides[index];
@@ -692,12 +785,10 @@
     function togglePresenterMode() {
       if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(err => {
-          console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+          console.warn(`Fullscreen error: ${err.message}`);
         });
-      } else {
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        }
+      } else if (document.exitFullscreen) {
+        document.exitFullscreen();
       }
     }
 
@@ -712,8 +803,31 @@
       }
     });
 
-    // Initial render
+    // Touch swipe support for mobile
+    let touchStartX = 0;
+    let touchEndX = 0;
+    document.getElementById('stageCard').addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+
+    document.getElementById('stageCard').addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      if (touchEndX < touchStartX - 50) nextSlide();
+      if (touchEndX > touchStartX + 50) prevSlide();
+    }, {passive: true});
+
+    // Initial load
     document.addEventListener('DOMContentLoaded', () => {
+      const detected = detectDevice();
+      document.getElementById('detectedType').textContent = detected === 'mobile' ? 'Mobile / Tablet' : 'Desktop / PC';
+      
+      // Auto calibrate initial render to detected device
+      if (detected === 'mobile') {
+        applyDeviceMode('mobile');
+      } else {
+        applyDeviceMode('pc');
+      }
+      
       renderSlide(0);
     });
   </script>
