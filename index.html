@@ -3,48 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HostLab // Canvas Hub</title>
+  <title>CanvasDrop // Micro Host</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #f8fafc;
-      --surface: #ffffff;
+      --card-bg: #ffffff;
       --border: #e2e8f0;
+      --border-hover: #cbd5e1;
       --accent: #6366f1;
       --accent-soft: #eef2ff;
       --accent-hover: #4f46e5;
       --text: #0f172a;
-      --muted: #64748b;
-      --radius: 14px;
+      --text-muted: #64748b;
+      --radius: 16px;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg);
+      background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
     }
 
-    /* Viewer Mode */
-    #viewer-frame {
-      display: none;
-      width: 100vw;
-      height: 100vh;
-      border: none;
-    }
-
-    /* Creator Mode */
-    .app-shell {
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 0 20px;
+    .container {
       width: 100%;
+      max-width: 800px;
     }
 
-    .header {
+    header {
       margin-bottom: 32px;
       text-align: left;
     }
@@ -52,77 +46,108 @@
     .badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
       background: var(--accent-soft);
       color: var(--accent);
+      padding: 4px 12px;
       border-radius: 999px;
       font-size: 0.8rem;
       font-weight: 600;
+      letter-spacing: 0.04em;
       margin-bottom: 12px;
+      text-transform: uppercase;
     }
 
     h1 {
-      font-size: 2rem;
+      font-size: 2.2rem;
       letter-spacing: -0.03em;
       margin-bottom: 6px;
     }
 
-    p.sub {
-      color: var(--muted);
-      font-size: 0.95rem;
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 1rem;
     }
 
     .card {
-      background: var(--surface);
+      background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 24px;
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+      padding: 28px;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+      margin-bottom: 24px;
     }
 
+    /* Drop Zone UI */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 40px 20px;
+      text-align: center;
+      background: #fafafa;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      margin-bottom: 20px;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .dropzone svg {
+      width: 36px;
+      height: 36px;
+      stroke: var(--accent);
+      fill: none;
+      margin-bottom: 8px;
+    }
+
+    .dropzone span {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .dropzone small {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+    }
+
+    /* Editor View */
     .editor-label {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
+      display: block;
       font-size: 0.85rem;
       font-weight: 600;
-      color: var(--muted);
+      color: var(--text-muted);
+      margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     textarea {
       width: 100%;
-      height: 280px;
+      height: 200px;
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 16px;
+      padding: 14px;
       font-family: 'JetBrains Mono', monospace;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       color: var(--text);
       background: #fafafa;
-      resize: vertical;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      resize: vertical;
+      transition: border 0.2s;
     }
 
     textarea:focus {
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
       background: #fff;
     }
 
-    .actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    button {
+    .btn {
       background: var(--accent);
-      color: white;
+      color: #fff;
       border: none;
       border-radius: 10px;
       padding: 12px 24px;
@@ -132,149 +157,86 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      transition: background 0.2s, transform 0.1s;
+      margin-top: 16px;
+      transition: background 0.2s;
     }
 
-    button:hover { background: var(--accent-hover); }
-    button:active { transform: scale(0.98); }
+    .btn:hover { background: var(--accent-hover); }
 
-    .result-box {
-      margin-top: 24px;
-      padding-top: 20px;
-      border-top: 1px dashed var(--border);
+    /* Output Section */
+    .output-section {
       display: none;
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
     }
 
-    .result-input-group {
+    .url-bar {
       display: flex;
       gap: 8px;
       margin-top: 8px;
     }
 
-    .result-input {
+    .url-input {
       flex: 1;
-      padding: 10px 14px;
+      padding: 12px;
       border: 1px solid var(--border);
       border-radius: 8px;
+      background: #f1f5f9;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
-      background: #f1f5f9;
       color: var(--text);
     }
 
     .btn-secondary {
       background: #f1f5f9;
       color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
     }
-    .btn-secondary:hover { background: #e2e8f0; }
 
-    .file-input {
-      display: none;
+    .btn-secondary:hover {
+      background: #e2e8f0;
     }
   </style>
 </head>
 <body>
 
-  <!-- Dedicated Sandbox Runner -->
-  <iframe id="viewer-frame" sandbox="allow-scripts allow-forms allow-modals allow-same-origin"></iframe>
-
-  <!-- Admin / Generator Dashboard -->
-  <main class="app-shell" id="admin-panel">
-    <div class="header">
-      <div class="badge">Local Engine</div>
-      <h1>Sub-Page Generator</h1>
-      <p class="sub">Pack self-contained HTML directly into your repository URL without pushing new files.</p>
-    </div>
+  <div class="container">
+    <header>
+      <div class="badge">Static Serverless</div>
+      <h1>Sub-Page Launcher</h1>
+      <p class="subtitle">Convert standalone HTML files into instantly hostable URLs on your domain.</p>
+    </header>
 
     <div class="card">
-      <div class="editor-label">
-        <span>Source Code</span>
-        <label style="cursor: pointer; color: var(--accent);">
-          Upload .html file
-          <input type="file" id="file-uploader" class="file-input" accept=".html,.htm">
-        </label>
+      <div class="dropzone" id="drop-zone">
+        <svg xmlns="http://www.w3.org/2000/svg" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/></svg>
+        <span>Click to browse or drop an HTML file here</span>
+        <small>Supports single-file HTML pages with inline CSS and JS</small>
+        <input type="file" id="file-input" accept=".html,.htm" style="display: none;">
       </div>
 
-      <textarea id="code-input" placeholder="Paste full HTML code here (CSS and JS should be inline)..."></textarea>
+      <label class="editor-label">Raw HTML Code Preview</label>
+      <textarea id="code-preview" placeholder="Upload a file or paste your code directly here..."></textarea>
 
-      <div class="actions">
-        <button id="generate-btn">Generate Standalone Link</button>
-      </div>
+      <button id="generate-btn" class="btn">Generate Hosted URL</button>
 
-      <div class="result-box" id="result-box">
-        <label class="editor-label">Generated Page Link</label>
-        <div class="result-input-group">
-          <input type="text" id="output-url" class="result-input" readonly>
+      <div class="output-section" id="output-section">
+        <label class="editor-label">Hosted URL Fragment</label>
+        <div class="url-bar">
+          <input type="text" id="output-url" class="url-input" readonly>
           <button class="btn-secondary" id="copy-btn">Copy</button>
           <button class="btn-secondary" id="open-btn">Open</button>
         </div>
       </div>
     </div>
-  </main>
+  </div>
 
-  <script>
-    const hash = window.location.hash;
-
-    // View Mode: If a hash exists, render the code and hide the admin interface
-    if (hash && hash.startsWith('#run=')) {
-      document.getElementById('admin-panel').style.display = 'none';
-      const viewer = document.getElementById('viewer-frame');
-      viewer.style.display = 'block';
-
-      try {
-        const rawEncoded = hash.replace('#run=', '');
-        const decodedHtml = decodeURIComponent(escape(atob(rawEncoded)));
-        
-        // Write decoded code directly into the isolated sandbox iframe
-        const doc = viewer.contentWindow.document;
-        doc.open();
-        doc.write(decodedHtml);
-        doc.close();
-      } catch (err) {
-        document.body.innerHTML = '<p style="padding: 20px; font-family: sans-serif; color: red;">Failed to parse URL payload.</p>';
-      }
-    }
-
-    // Generator logic
-    const codeInput = document.getElementById('code-input');
-    const generateBtn = document.getElementById('generate-btn');
-    const resultBox = document.getElementById('result-box');
-    const outputUrl = document.getElementById('output-url');
-    const copyBtn = document.getElementById('copy-btn');
-    const openBtn = document.getElementById('open-btn');
-    const fileUploader = document.getElementById('file-uploader');
-
-    fileUploader.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        codeInput.value = event.target.result;
-      };
-      reader.readAsText(file);
-    });
-
-    generateBtn.addEventListener('click', () => {
-      const content = codeInput.value.trim();
-      if (!content) return;
-
-      const encoded = btoa(unescape(encodeURIComponent(content)));
-      const fullUrl = `${window.location.origin}${window.location.pathname}#run=${encoded}`;
-
-      outputUrl.value = fullUrl;
-      resultBox.style.display = 'block';
-    });
-
-    copyBtn.addEventListener('click', () => {
-      outputUrl.select();
-      navigator.clipboard.writeText(outputUrl.value);
-      copyBtn.textContent = 'Copied!';
-      setTimeout(() => copyBtn.textContent = 'Copy', 1500);
-    });
-
-    openBtn.addEventListener('click', () => {
-      window.open(outputUrl.value, '_blank');
-    });
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
