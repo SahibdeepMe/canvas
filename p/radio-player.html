@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liquid Dream M3U Player</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Work+Sans:wght@300;400;600&display=swap');
+
+        :root {
+            --accent: #ff007a;
+            --glass: rgba(255, 255, 255, 0.45);
+            --glass-border: rgba(255, 255, 255, 0.7);
+            --arm-rest-deg: -60deg;
+            --arm-play-deg: -18deg;
+        }
+
+        body {
+            font-family: 'Work Sans', sans-serif;
+            background: #f0f2f5;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 2000px;
+            overflow-x: hidden;
+        }
+
+        /* Full Responsive Container */
+        .player-shell {
+            background: var(--glass);
+            backdrop-filter: blur(60px) saturate(200%);
+            -webkit-backdrop-filter: blur(60px) saturate(200%);
+            border: 1.5px solid var(--glass-border);
+            box-shadow: 0 50px 100px -20px rgba(0,0,0,0.1), inset 0 0 30px rgba(255,255,255,0.4);
+            border-radius: 30px;
+            width: 95%;
+            max-width: 1100px;
+            margin: 20px auto;
+            max-height: 92vh;
+            overflow-y: auto; 
+            scrollbar-width: none;
+        }
+        .player-shell::-webkit-scrollbar { display: none; }
+
+        @media (min-width: 768px) {
+            .player-shell { border-radius: 50px; overflow: hidden; }
+        }
+
+        /* Marquee Left-Right Scroll */
+        .marquee-container {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: marquee 12s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-100%, 0); }
+        }
+
+        .liquid-bg {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, #ffffff, #eef2ff);
+        }
+
+        .blob {
+            position: absolute;
+            width: 80vw;
+            height: 80vw;
+            filter: blur(80px);
+            border-radius: 50%;
+            opacity: 0.15;
+            animation: morph 15s linear infinite alternate;
+        }
+
+        @keyframes morph {
+            0% { border-radius: 40% 60% 60% 40%; transform: translate(0,0) scale(1); }
+            50% { border-radius: 60% 40% 40% 60%; transform: translate(10%, 5%) scale(1.1); }
+            100% { border-radius: 40% 60% 60% 40%; transform: translate(-5%, 10%) scale(1); }
+        }
+
+        .deck-container {
+            position: relative;
+            width: 250px;
+            height: 250px;
+            transform-style: preserve-3d;
+        }
+        @media (min-width: 768px) {
+            .deck-container { width: 300px; height: 300px; }
+        }
+
+        #vinyl {
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at center, #ff007a 0%, #ff007a 12%, transparent 13%),
+                repeating-radial-gradient(circle at center, #000 0, #000 1px, #1a1a1a 2px, #000 3px);
+            border-radius: 50%;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            transform: translateZ(20px);
+            transition: transform 0.8s ease;
+            border: 4px solid #111;
+        }
+
+        .is-spinning #vinyl { animation: spinVinyl 3s linear infinite; }
+        @keyframes spinVinyl {
+            from { transform: translateZ(20px) rotate(0deg); }
+            to { transform: translateZ(20px) rotate(360deg); }
+        }
+
+        .tonearm-stick {
+            position: absolute;
+            top: 45px;
+            right: 15px;
+            width: 120px; 
+            height: 8px;
+            background: linear-gradient(to bottom, #fff, #ddd);
+            border-radius: 10px;
+            transform-origin: calc(100% - 10px) 50%;
+            z-index: 50;
+            transform: rotate(var(--arm-rest-deg)) translateZ(20px);
+            transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .arm-travel-upside { transform: rotate(var(--arm-rest-deg)) translateZ(65px) rotateX(12deg) !important; }
+        .arm-over-upside { transform: rotate(var(--arm-play-deg)) translateZ(65px) rotateX(12deg) !important; }
+        .arm-downside-play { transform: rotate(var(--arm-play-deg)) translateZ(25px) rotateX(0deg) !important; }
+        .arm-downside-rest { transform: rotate(var(--arm-rest-deg)) translateZ(20px) rotateX(0deg) !important; }
+
+        .play-btn {
+            width: 70px;
+            height: 70px;
+            background: #111;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .is-playing-ui .play-btn { background: var(--accent); }
+
+        .song-item {
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .song-item.active { background: white; border: 1.5px solid var(--accent); }
+
+        .syncopate { font-family: 'Syncopate', sans-serif; letter-spacing: 2px; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: rgba(0,0,0,0.05);
+            border-radius: 2px;
+            margin: 15px 0;
+            cursor: pointer;
+        }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.1s; }
+
+        #fetch-overlay {
+            position: fixed;
+            inset: 0;
+            background: white;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #fetch-overlay.hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="fetch-overlay">
+        <div class="mb-6 animate-spin text-pink-500 text-4xl"><i class="fas fa-compact-disc"></i></div>
+        <h2 id="loading-text" class="syncopate text-xs font-bold text-slate-800">SYNCING STATIONS...</h2>
+    </div>
+
+    <div class="liquid-bg">
+        <div class="blob" style="top: -10%; left: -5%; background: #ff007a;"></div>
+        <div class="blob" style="bottom: -15%; right: -5%; background: #7000ff;"></div>
+    </div>
+
+    <div id="player-main" class="player-shell">
+        <div class="flex flex-col md:flex-row">
+            <div class="w-full md:w-5/12 p-8 md:p-10 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-black/5">
+                <div class="deck-container">
+                    <div class="absolute top-[35px] right-[5px] w-10 h-10 md:w-12 md:h-12 bg-white rounded-full shadow-lg z-[40]"></div>
+                    <div class="tonearm-stick arm-downside-rest" id="stick"></div>
+                    <div id="vinyl"></div>
+                </div>
+
+                <div class="text-center w-full mt-8">
+                    <p class="syncopate text-[9px] text-pink-500 font-bold mb-1 uppercase">Radio Stream</p>
+                    
+                    <div class="marquee-container mb-4">
+                        <h1 id="current-name" class="marquee-text text-lg md:text-xl font-bold text-slate-900">Select a station...</h1>
+                    </div>
+                    
+                    <div class="progress-container" id="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+
+                    <div class="flex items-center justify-center gap-6 mb-8">
+                        <button onclick="prevSong()" class="text-slate-400 hover:text-pink-500"><i class="fas fa-step-backward text-xl"></i></button>
+                        <button id="main-play-btn" onclick="togglePlay()" class="play-btn"><i id="play-icon" class="fas fa-play ml-1"></i></button>
+                        <button onclick="nextSong()" class="text-slate-400 hover:text-pink-500"><i class="fas fa-step-forward text-xl"></i></button>
+                    </div>
+
+                    <div class="flex items-center gap-4 px-4">
+                        <i id="vol-down-icon" class="fas fa-volume-down text-slate-300 text-xs transition-all"></i>
+                        <input type="range" id="volume-slider" class="w-full accent-pink-500 cursor-pointer" min="0" max="1" step="0.01" value="0.7">
+                        <i id="vol-up-icon" class="fas fa-volume-up text-pink-500 text-xs transition-all"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full md:w-7/12 p-8 md:p-10 flex flex-col h-[550px] md:h-[650px]">
+                <h2 class="syncopate text-[10px] font-bold text-slate-400 mb-6 uppercase">Radio Library</h2>
+
+                <div class="bg-white/40 border border-black/5 rounded-2xl p-4 flex items-center gap-3 mb-6 shadow-sm">
+                    <i class="fas fa-search text-slate-300"></i>
+                    <input type="text" id="search-input" class="bg-transparent border-none outline-none w-full text-sm font-medium" placeholder="Find station..." oninput="filterSongs()">
+                </div>
+                
+                <div id="song-list" class="space-y-2 overflow-y-auto pr-2 custom-scroll flex-1">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="audio-engine"></audio>
+
+    <script type="module">
+        const audio = document.getElementById('audio-engine');
+        const playIcon = document.getElementById('play-icon');
+        const playerMain = document.getElementById('player-main');
+        const songListElement = document.getElementById('song-list');
+        const nameDisplay = document.getElementById('current-name');
+        const stick = document.getElementById('stick');
+        const searchInput = document.getElementById('search-input');
+        const progressFill = document.getElementById('progress-fill');
+        const volSlider = document.getElementById('volume-slider');
+        const volUpIcon = document.getElementById('vol-up-icon');
+        const volDownIcon = document.getElementById('vol-down-icon');
+        const overlay = document.getElementById('fetch-overlay');
+
+        let playlist = [];
+        let filteredPlaylist = [];
+        let currentLoadedIndex = -1;
+        let isPlaying = false;
+        let isTransitioning = false;
+
+        // Using a CORS proxy or checking direct link
+        const GITHUB_M3U_URL = 'https://raw.githubusercontent.com/SahibdeepMe/Radio-Player/refs/heads/main/raddddo.m3u';
+
+        async function loadPlaylistFromGitHub() {
+            try {
+                const response = await fetch(GITHUB_M3U_URL);
+                if(!response.ok) throw new Error("Network response was not ok");
+                const content = await response.text();
+                parseM3U(content);
+                overlay.classList.add('hidden');
+                filterSongs();
+            } catch (err) {
+                console.error("Fetch error:", err);
+                document.getElementById('loading-text').innerText = "CONNECTION ERROR - CHECK NETWORK";
+                // Even on error, hide overlay after 3 seconds so user can see UI
+                setTimeout(() => overlay.classList.add('hidden'), 3000);
+            }
+        }
+
+        function parseM3U(content) {
+            const lines = content.split('\n');
+            let currentTitle = "";
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.startsWith('#EXTINF:')) {
+                    const commaIndex = line.lastIndexOf(',');
+                    if (commaIndex !== -1) currentTitle = line.substring(commaIndex + 1).trim();
+                } else if (line && !line.startsWith('#')) {
+                    playlist.push({ title: currentTitle || "Live Station", url: line });
+                    currentTitle = "";
+                }
+            });
+        }
+
+        window.filterSongs = () => {
+            const term = searchInput.value.toLowerCase();
+            filteredPlaylist = playlist.filter(s => s.title.toLowerCase().includes(term));
+            render();
+        }
+
+        function render() {
+            if(filteredPlaylist.length === 0) {
+                songListElement.innerHTML = `<div class="text-slate-400 text-xs text-center mt-10">No stations found...</div>`;
+                return;
+            }
+            songListElement.innerHTML = filteredPlaylist.map((song, idx) => `
+                <div class="song-item ${currentLoadedIndex === idx ? 'active' : ''}" onclick="selectSong(${idx})">
+                    <div class="w-8 h-8 flex items-center justify-center bg-black/5 rounded-full text-[10px] font-bold">${idx + 1}</div>
+                    <div class="flex-1 truncate">
+                        <span class="font-semibold text-[11px] text-slate-700 block truncate">${song.title}</span>
+                    </div>
+                    <i class="fas ${currentLoadedIndex === idx && isPlaying ? 'fa-volume-up text-pink-500' : 'fa-play text-slate-300'} text-[10px]"></i>
+                </div>
+            `).join('');
+        }
+
+        async function animateArm(action) {
+            isTransitioning = true;
+            playerMain.classList.remove('is-spinning');
+            const reset = () => stick.className = 'tonearm-stick';
+            
+            if (action === 'play') {
+                reset(); stick.classList.add('arm-travel-upside');
+                await new Promise(r => setTimeout(r, 600));
+                stick.classList.add('arm-over-upside');
+                await new Promise(r => setTimeout(r, 600));
+                stick.classList.add('arm-downside-play');
+                await new Promise(r => setTimeout(r, 800));
+                playerMain.classList.add('is-spinning');
+            } else {
+                reset(); stick.classList.add('arm-downside-rest');
+            }
+            isTransitioning = false;
+        }
+
+        window.selectSong = async (index) => {
+            if (isTransitioning) return;
+            currentLoadedIndex = index;
+            const song = filteredPlaylist[index];
+            nameDisplay.innerText = "Connecting...";
+            audio.src = song.url;
+            isPlaying = true;
+            updateUI();
+            await animateArm('play');
+            audio.play().then(() => {
+                nameDisplay.innerText = song.title;
+            }).catch(() => {
+                nameDisplay.innerText = "Error: Stream Offline";
+                isPlaying = false;
+                updateUI();
+                animateArm('pause');
+            });
+            render();
+        };
+
+        window.togglePlay = async () => {
+            if (isTransitioning) return;
+            if (currentLoadedIndex === -1) { 
+                if(filteredPlaylist.length > 0) selectSong(0); 
+                return; 
+            }
+            if (isPlaying) {
+                audio.pause();
+                isPlaying = false;
+                await animateArm('pause');
+            } else {
+                audio.play();
+                isPlaying = true;
+                await animateArm('play');
+            }
+            updateUI();
+            render();
+        };
+
+        window.nextSong = () => { if(filteredPlaylist.length > 0) selectSong((currentLoadedIndex + 1) % filteredPlaylist.length); };
+        window.prevSong = () => { if(filteredPlaylist.length > 0) selectSong((currentLoadedIndex - 1 + filteredPlaylist.length) % filteredPlaylist.length); };
+        
+        function updateUI() {
+            playIcon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play ml-1';
+            playerMain.classList.toggle('is-playing-ui', isPlaying);
+        }
+
+        volSlider.oninput = (e) => {
+            let val = parseFloat(e.target.value);
+            // Snap back if too low (below 10%)
+            if (val < 0.10 && val > 0) {
+                val = 0.10;
+                volSlider.value = 0.10;
+            }
+            audio.volume = val;
+            volUpIcon.style.transform = val > 0.8 ? 'scale(1.3)' : 'scale(1)';
+            volUpIcon.style.color = val > 0.8 ? '#ff007a' : '';
+            volDownIcon.style.opacity = val <= 0.1 ? '0.3' : '1';
+        };
+
+        audio.ontimeupdate = () => {
+            if (audio.duration && !isNaN(audio.duration)) progressFill.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+        };
+
+        window.addEventListener('load', loadPlaylistFromGitHub);
+    </script>
+</body>
+</html>
