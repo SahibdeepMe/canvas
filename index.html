@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HostLab // Canvas Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --border: #e2e8f0;
+      --accent: #6366f1;
+      --accent-soft: #eef2ff;
+      --accent-hover: #4f46e5;
+      --text: #0f172a;
+      --muted: #64748b;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Viewer Mode */
+    #viewer-frame {
+      display: none;
+      width: 100vw;
+      height: 100vh;
+      border: none;
+    }
+
+    /* Creator Mode */
+    .app-shell {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 0 20px;
+      width: 100%;
+    }
+
+    .header {
+      margin-bottom: 32px;
+      text-align: left;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+
+    p.sub {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    .editor-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    textarea {
+      width: 100%;
+      height: 280px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: #fafafa;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+      background: #fff;
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover { background: var(--accent-hover); }
+    button:active { transform: scale(0.98); }
+
+    .result-box {
+      margin-top: 24px;
+      padding-top: 20px;
+      border-top: 1px dashed var(--border);
+      display: none;
+    }
+
+    .result-input-group {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .result-input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      background: #f1f5f9;
+      color: var(--text);
+    }
+
+    .btn-secondary {
+      background: #f1f5f9;
+      color: var(--text);
+    }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    .file-input {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dedicated Sandbox Runner -->
+  <iframe id="viewer-frame" sandbox="allow-scripts allow-forms allow-modals allow-same-origin"></iframe>
+
+  <!-- Admin / Generator Dashboard -->
+  <main class="app-shell" id="admin-panel">
+    <div class="header">
+      <div class="badge">Local Engine</div>
+      <h1>Sub-Page Generator</h1>
+      <p class="sub">Pack self-contained HTML directly into your repository URL without pushing new files.</p>
+    </div>
+
+    <div class="card">
+      <div class="editor-label">
+        <span>Source Code</span>
+        <label style="cursor: pointer; color: var(--accent);">
+          Upload .html file
+          <input type="file" id="file-uploader" class="file-input" accept=".html,.htm">
+        </label>
+      </div>
+
+      <textarea id="code-input" placeholder="Paste full HTML code here (CSS and JS should be inline)..."></textarea>
+
+      <div class="actions">
+        <button id="generate-btn">Generate Standalone Link</button>
+      </div>
+
+      <div class="result-box" id="result-box">
+        <label class="editor-label">Generated Page Link</label>
+        <div class="result-input-group">
+          <input type="text" id="output-url" class="result-input" readonly>
+          <button class="btn-secondary" id="copy-btn">Copy</button>
+          <button class="btn-secondary" id="open-btn">Open</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const hash = window.location.hash;
+
+    // View Mode: If a hash exists, render the code and hide the admin interface
+    if (hash && hash.startsWith('#run=')) {
+      document.getElementById('admin-panel').style.display = 'none';
+      const viewer = document.getElementById('viewer-frame');
+      viewer.style.display = 'block';
+
+      try {
+        const rawEncoded = hash.replace('#run=', '');
+        const decodedHtml = decodeURIComponent(escape(atob(rawEncoded)));
+        
+        // Write decoded code directly into the isolated sandbox iframe
+        const doc = viewer.contentWindow.document;
+        doc.open();
+        doc.write(decodedHtml);
+        doc.close();
+      } catch (err) {
+        document.body.innerHTML = '<p style="padding: 20px; font-family: sans-serif; color: red;">Failed to parse URL payload.</p>';
+      }
+    }
+
+    // Generator logic
+    const codeInput = document.getElementById('code-input');
+    const generateBtn = document.getElementById('generate-btn');
+    const resultBox = document.getElementById('result-box');
+    const outputUrl = document.getElementById('output-url');
+    const copyBtn = document.getElementById('copy-btn');
+    const openBtn = document.getElementById('open-btn');
+    const fileUploader = document.getElementById('file-uploader');
+
+    fileUploader.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        codeInput.value = event.target.result;
+      };
+      reader.readAsText(file);
+    });
+
+    generateBtn.addEventListener('click', () => {
+      const content = codeInput.value.trim();
+      if (!content) return;
+
+      const encoded = btoa(unescape(encodeURIComponent(content)));
+      const fullUrl = `${window.location.origin}${window.location.pathname}#run=${encoded}`;
+
+      outputUrl.value = fullUrl;
+      resultBox.style.display = 'block';
+    });
+
+    copyBtn.addEventListener('click', () => {
+      outputUrl.select();
+      navigator.clipboard.writeText(outputUrl.value);
+      copyBtn.textContent = 'Copied!';
+      setTimeout(() => copyBtn.textContent = 'Copy', 1500);
+    });
+
+    openBtn.addEventListener('click', () => {
+      window.open(outputUrl.value, '_blank');
+    });
+  </script>
+</body>
+</html>
