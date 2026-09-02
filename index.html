@@ -12,7 +12,6 @@
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --border: #e2e8f0;
-      --border-hover: #cbd5e1;
       --accent: #6366f1;
       --accent-soft: #eef2ff;
       --accent-hover: #4f46e5;
@@ -39,135 +38,118 @@
     }
 
     header {
-      margin-bottom: 32px;
+      margin-bottom: 24px;
       text-align: left;
     }
 
     .badge {
       display: inline-flex;
-      align-items: center;
       background: var(--accent-soft);
       color: var(--accent);
       padding: 4px 12px;
       border-radius: 999px;
       font-size: 0.8rem;
       font-weight: 600;
-      letter-spacing: 0.04em;
       margin-bottom: 12px;
       text-transform: uppercase;
     }
 
     h1 {
-      font-size: 2.2rem;
+      font-size: 2rem;
       letter-spacing: -0.03em;
       margin-bottom: 6px;
     }
 
     p.subtitle {
       color: var(--text-muted);
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
 
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 28px;
+      padding: 24px;
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
-      margin-bottom: 24px;
-    }
-
-    /* Drop Zone UI */
-    .dropzone {
-      border: 2px dashed var(--border);
-      border-radius: 12px;
-      padding: 40px 20px;
-      text-align: center;
-      background: #fafafa;
-      cursor: pointer;
-      transition: all 0.2s ease;
       margin-bottom: 20px;
     }
 
-    .dropzone:hover, .dropzone.dragover {
-      border-color: var(--accent);
-      background: var(--accent-soft);
+    .form-group {
+      margin-bottom: 16px;
     }
 
-    .dropzone svg {
-      width: 36px;
-      height: 36px;
-      stroke: var(--accent);
-      fill: none;
-      margin-bottom: 8px;
-    }
-
-    .dropzone span {
+    label {
       display: block;
-      font-weight: 600;
-      color: var(--text);
-      font-size: 0.95rem;
-    }
-
-    .dropzone small {
-      color: var(--text-muted);
-      font-size: 0.8rem;
-    }
-
-    /* Editor View */
-    .editor-label {
-      display: block;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       font-weight: 600;
       color: var(--text-muted);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
-    textarea {
+    input[type="text"], input[type="password"] {
       width: 100%;
-      height: 200px;
+      padding: 10px 14px;
       border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
+      border-radius: 8px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
-      color: var(--text);
+      outline: none;
+      background: #fafafa;
+    }
+
+    input:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 12px;
+      padding: 30px 20px;
+      text-align: center;
+      background: #fafafa;
+      cursor: pointer;
+      margin-bottom: 16px;
+    }
+
+    .dropzone:hover {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
       background: #fafafa;
       outline: none;
       resize: vertical;
-      transition: border 0.2s;
-    }
-
-    textarea:focus {
-      border-color: var(--accent);
-      background: #fff;
     }
 
     .btn {
       background: var(--accent);
       color: #fff;
       border: none;
-      border-radius: 10px;
-      padding: 12px 24px;
+      border-radius: 8px;
+      padding: 12px 20px;
       font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
       margin-top: 16px;
-      transition: background 0.2s;
     }
 
     .btn:hover { background: var(--accent-hover); }
 
-    /* Output Section */
     .output-section {
       display: none;
-      margin-top: 24px;
-      padding-top: 24px;
+      margin-top: 20px;
+      padding-top: 20px;
       border-top: 1px solid var(--border);
     }
 
@@ -175,17 +157,6 @@
       display: flex;
       gap: 8px;
       margin-top: 8px;
-    }
-
-    .url-input {
-      flex: 1;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: #f1f5f9;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      color: var(--text);
     }
 
     .btn-secondary {
@@ -196,11 +167,6 @@
       padding: 0 16px;
       font-weight: 600;
       cursor: pointer;
-      transition: background 0.15s;
-    }
-
-    .btn-secondary:hover {
-      background: #e2e8f0;
     }
   </style>
 </head>
@@ -208,28 +174,36 @@
 
   <div class="container">
     <header>
-      <div class="badge">Static Serverless</div>
+      <div class="badge">Direct Cloud Deploy</div>
       <h1>Sub-Page Launcher</h1>
-      <p class="subtitle">Convert standalone HTML files into instantly hostable URLs on your domain.</p>
+      <p class="subtitle">Deploy custom-named HTML endpoints directly to your canvas repo.</p>
     </header>
 
     <div class="card">
+      <div class="form-group">
+        <label>GitHub Fine-Grained / Classic Token (Saved in LocalStorage)</label>
+        <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+      </div>
+
+      <div class="form-group">
+        <label>Custom Short Path / Name</label>
+        <input type="text" id="project-slug" placeholder="e.g. portfolio, my-tool, game">
+      </div>
+
       <div class="dropzone" id="drop-zone">
-        <svg xmlns="http://www.w3.org/2000/svg" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z"/></svg>
-        <span>Click to browse or drop an HTML file here</span>
-        <small>Supports single-file HTML pages with inline CSS and JS</small>
+        <strong>Click or drop HTML file here</strong>
         <input type="file" id="file-input" accept=".html,.htm" style="display: none;">
       </div>
 
-      <label class="editor-label">Raw HTML Code Preview</label>
-      <textarea id="code-preview" placeholder="Upload a file or paste your code directly here..."></textarea>
+      <label>Raw HTML Code</label>
+      <textarea id="code-preview" placeholder="HTML code will appear here..."></textarea>
 
-      <button id="generate-btn" class="btn">Generate Hosted URL</button>
+      <button id="publish-btn" class="btn">Deploy Custom Page</button>
 
       <div class="output-section" id="output-section">
-        <label class="editor-label">Hosted URL Fragment</label>
+        <label>Your Short Custom URL</label>
         <div class="url-bar">
-          <input type="text" id="output-url" class="url-input" readonly>
+          <input type="text" id="output-url" readonly>
           <button class="btn-secondary" id="copy-btn">Copy</button>
           <button class="btn-secondary" id="open-btn">Open</button>
         </div>
