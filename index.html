@@ -12,12 +12,13 @@
       --bg: #f8fafc;
       --card-bg: #ffffff;
       --border: #e2e8f0;
-      --accent: #6366f1;
+      --accent: #4f46e5;
       --accent-soft: #eef2ff;
-      --accent-hover: #4f46e5;
+      --accent-hover: #4338ca;
       --text: #0f172a;
       --text-muted: #64748b;
       --radius: 16px;
+      --success: #16a34a;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -49,9 +50,10 @@
       padding: 4px 12px;
       border-radius: 999px;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       margin-bottom: 12px;
       text-transform: uppercase;
+      letter-spacing: 0.05em;
     }
 
     h1 {
@@ -69,34 +71,35 @@
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 24px;
+      padding: 28px;
       box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
       margin-bottom: 20px;
     }
 
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     label {
       display: block;
-      font-size: 0.82rem;
-      font-weight: 600;
+      font-size: 0.8rem;
+      font-weight: 700;
       color: var(--text-muted);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     input[type="text"], input[type="password"] {
       width: 100%;
-      padding: 10px 14px;
+      padding: 12px 14px;
       border: 1px solid var(--border);
       border-radius: 8px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
       outline: none;
       background: #fafafa;
+      transition: border-color 0.2s, background 0.2s;
     }
 
     input:focus {
@@ -107,29 +110,42 @@
     .dropzone {
       border: 2px dashed var(--border);
       border-radius: 12px;
-      padding: 30px 20px;
+      padding: 32px 20px;
       text-align: center;
       background: #fafafa;
       cursor: pointer;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
+      transition: border-color 0.2s, background 0.2s;
     }
 
-    .dropzone:hover {
+    .dropzone:hover, .dropzone.dragover {
       border-color: var(--accent);
       background: var(--accent-soft);
     }
 
+    .dropzone strong {
+      display: block;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
     textarea {
       width: 100%;
-      height: 180px;
+      height: 200px;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 12px;
+      padding: 14px;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.85rem;
       background: #fafafa;
       outline: none;
       resize: vertical;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+      background: #fff;
     }
 
     .btn {
@@ -137,18 +153,20 @@
       color: #fff;
       border: none;
       border-radius: 8px;
-      padding: 12px 20px;
+      padding: 12px 24px;
       font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
-      margin-top: 16px;
+      margin-top: 18px;
+      transition: background 0.2s;
     }
 
     .btn:hover { background: var(--accent-hover); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .output-section {
       display: none;
-      margin-top: 20px;
+      margin-top: 24px;
       padding-top: 20px;
       border-top: 1px solid var(--border);
     }
@@ -164,9 +182,14 @@
       color: var(--text);
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 0 16px;
+      padding: 0 18px;
       font-weight: 600;
       cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-secondary:hover {
+      background: #e2e8f0;
     }
   </style>
 </head>
@@ -181,13 +204,13 @@
 
     <div class="card">
       <div class="form-group">
-        <label>GitHub Fine-Grained / Classic Token (Saved in LocalStorage)</label>
+        <label for="gh-token">GitHub Fine-Grained / Classic Token (Saved in LocalStorage)</label>
         <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
       </div>
 
       <div class="form-group">
-        <label>Custom Short Path / Name</label>
-        <input type="text" id="project-slug" placeholder="e.g. portfolio, my-tool, game">
+        <label for="project-slug">Custom Short Path / Name</label>
+        <input type="text" id="project-slug" placeholder="e.g. ServerSetup">
       </div>
 
       <div class="dropzone" id="drop-zone">
@@ -195,13 +218,15 @@
         <input type="file" id="file-input" accept=".html,.htm" style="display: none;">
       </div>
 
-      <label>Raw HTML Code</label>
-      <textarea id="code-preview" placeholder="HTML code will appear here..."></textarea>
+      <div class="form-group">
+        <label for="code-preview">Raw HTML Code</label>
+        <textarea id="code-preview" placeholder="HTML code will appear here..."></textarea>
+      </div>
 
       <button id="publish-btn" class="btn">Deploy Custom Page</button>
 
       <div class="output-section" id="output-section">
-        <label>Your Short Custom URL</label>
+        <label for="output-url">Your Short Custom URL</label>
         <div class="url-bar">
           <input type="text" id="output-url" readonly>
           <button class="btn-secondary" id="copy-btn">Copy</button>
