@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Movie Servers - Home</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --accent1: #ff3c00;
+      --accent2: #ffae00;
+      --bg1: #0f0f0f;
+      --bg2: #2c2c2c;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Arial, sans-serif;
+      color:#fff;
+      min-height:100vh;
+      background: linear-gradient(135deg,var(--bg1),var(--bg2));
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      overflow:hidden;
+    }
+    header{
+      width:100%;
+      padding:10px 20px;
+      display:flex;
+      justify-content:flex-end;
+      gap:12px;
+      position:fixed;
+      top:0;
+      z-index:30;
+    }
+    #time{font-weight:700}
+    main{
+      padding-top:70px;
+      width:100%;
+      max-width:1100px;
+      margin:0 auto;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:14px;
+    }
+
+    .big-btn{
+      width:80%;
+      max-width:420px;
+      padding:16px;
+      border-radius:8px;
+      border:none;
+      background:var(--accent1);
+      color:#fff;
+      font-size:18px;
+      cursor:pointer;
+      transition:transform .18s ease, background .18s ease;
+    }
+    .big-btn:hover{ transform:scale(1.03); background:#e63500; }
+
+    /* iframe area */
+    .frame-wrap{
+      width:90%;
+      max-width:1100px;
+      margin-top:18px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+    }
+    #serverFrame{
+      width:100%;
+      height:65vh;
+      border-radius:8px;
+      border:1px solid rgba(255,255,255,0.06);
+      background:#000;
+      display:none; /* only show when loaded */
+    }
+    #frameLoader{
+      display:none;
+      padding:10px 14px;
+      background:rgba(0,0,0,0.6);
+      border-radius:6px;
+      border:1px solid rgba(255,255,255,0.06);
+    }
+    #frameFallback{
+      display:none;
+      margin-top:6px;
+      color:#ffc;
+      font-size:14px;
+      background:rgba(0,0,0,0.5);
+      padding:8px 12px;
+      border-radius:6px;
+    }
+    a.fallbackLink{
+      color:var(--accent1);
+      text-decoration:underline;
+      margin-left:8px;
+    }
+
+    /* small screens */
+    @media (max-width:600px){
+      .big-btn{ width:92% }
+      #serverFrame{ height:55vh }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div id="time">Loading time...</div>
+  </header>
+
+  <main id="mainArea">
+    <button class="big-btn" id="hdhubBtn">HdHud4u</button>
+    <button class="big-btn" onclick="openInNewTab('https://netmirror.bio')">Netmirror</button>
+    <button class="big-btn" onclick="openInNewTab('https://movies4u.ke/')">Movies4u</button>
+    <!-- navigate to a different page (same tab) -->
+    <button class="big-btn" id="moreBtn">More</button>
+
+    <div class="frame-wrap">
+      <div id="frameLoader">Loading server... (if it doesn't load, use the fallback link)</div>
+      <iframe id="serverFrame" src="" title="Server iframe"></iframe>
+      <div id="frameFallback">
+        Can't embed this site (it probably blocks iframes). Open it directly:
+        <a class="fallbackLink" id="fallbackOpen" target="_blank" rel="noopener">Open HdHub4u</a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // time
+    function updateTime(){
+      document.getElementById('time').textContent = new Date().toLocaleTimeString();
+    }
+    updateTime(); setInterval(updateTime,1000);
+
+    function openInNewTab(url){
+      if(!url) return;
+      window.open(url, '_blank', 'noopener');
+    }
+
+    // iframe logic: load only when clicked, and show loader + fallback
+    (function(){
+      const hdhubBtn = document.getElementById('hdhubBtn');
+      const moreBtn = document.getElementById('moreBtn');
+      const frame = document.getElementById('serverFrame');
+      const loader = document.getElementById('frameLoader');
+      const fallback = document.getElementById('frameFallback');
+      const fallbackLink = document.getElementById('fallbackOpen');
+
+      // the URL you want to embed
+      const HDHUB_URL = 'https://hdhub4u.cologne/?utm=mn&tx=3';
+
+      hdhubBtn.addEventListener('click', () => {
+        // set fallback href
+        fallbackLink.href = HDHUB_URL;
+        // If iframe already has the same src, toggle visibility
+        if(frame.src === HDHUB_URL && frame.style.display === 'block'){
+          // hide frame
+          frame.style.display = 'none';
+          loader.style.display = 'none';
+          fallback.style.display = 'none';
+          return;
+        }
+
+        // start loader
+        loader.style.display = 'block';
+        fallback.style.display = 'none';
+        frame.style.display = 'none';
+
+        // set src only once (or reload if you prefer)
+        if (frame.src !== HDHUB_URL) frame.src = HDHUB_URL;
+
+        // fallback timer (if it doesn't fire onload within 5s)
+        let fallbackTimer = setTimeout(() => {
+          loader.style.display = 'none';
+          frame.style.display = 'block'; // show even if blocked (browser may show error)
+          fallback.style.display = 'block'; // show fallback to open in new tab
+        }, 5000);
+
+        // onload clears fallback timer and shows frame
+        frame.onload = function () {
+          clearTimeout(fallbackTimer);
+          loader.style.display = 'none';
+          fallback.style.display = 'none';
+          frame.style.display = 'block';
+        };
+      });
+
+      // navigate to more.html in same tab
+      moreBtn.addEventListener('click', () => {
+        location.href = 'more.html';
+      });
+    })();
+  </script>
+</body>
+</html>
