@@ -75,6 +75,66 @@
       </div>
     </div>
 
+    <!-- Active Diagnostic Alert Box (Appears when Chrome Auto-Denies) -->
+    <div id="autoDenyWarningBox" class="hidden bg-rose-950/70 border border-rose-500/60 rounded-2xl p-5 text-rose-100 shadow-xl space-y-4">
+      <div class="flex items-start gap-3.5">
+        <div class="p-2.5 rounded-xl bg-rose-900/60 text-rose-300 border border-rose-700/50 flex-shrink-0">
+          <i class="ph-bold ph-prohibit text-2xl"></i>
+        </div>
+        <div class="flex-1">
+          <h3 class="font-bold text-sm text-white flex items-center gap-2">
+            Chrome Auto-Denied Permission Without Prompting
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-900 text-rose-200 uppercase font-mono tracking-wider">Blocked by Policy</span>
+          </h3>
+          <p class="text-xs text-rose-200/90 mt-1 leading-relaxed">
+            When Chrome denies immediately without showing a popup, it is because of one of the <strong>3 Android Chrome security rules</strong> below. Check your current status:
+          </p>
+        </div>
+      </div>
+
+      <!-- Diagnostic Status Badges -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+        <div id="diagProtocol" class="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex flex-col justify-between">
+          <span class="text-slate-400 text-[11px]">1. Origin Security</span>
+          <span id="diagProtocolVal" class="font-mono font-bold mt-1 text-amber-300">Checking...</span>
+          <span id="diagProtocolHint" class="text-[10px] text-slate-500 mt-1">Must be HTTPS or localhost</span>
+        </div>
+
+        <div id="diagSitePerm" class="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex flex-col justify-between">
+          <span class="text-slate-400 text-[11px]">2. Chrome Site Setting</span>
+          <span id="diagSitePermVal" class="font-mono font-bold mt-1 text-rose-300">Checking...</span>
+          <span class="text-[10px] text-slate-500 mt-1">Chrome site-level mic access</span>
+        </div>
+
+        <div id="diagOsPerm" class="bg-slate-950/70 border border-slate-800 p-3 rounded-xl flex flex-col justify-between">
+          <span class="text-slate-400 text-[11px]">3. Tablet OS System Access</span>
+          <span class="font-mono font-bold mt-1 text-slate-200">Android OS Level</span>
+          <span class="text-[10px] text-slate-500 mt-1">Settings &rarr; Apps &rarr; Chrome</span>
+        </div>
+      </div>
+
+      <!-- Quick Action Fix Steps -->
+      <div class="bg-slate-950/80 border border-rose-900/40 rounded-xl p-3.5 text-xs space-y-2">
+        <p class="font-semibold text-rose-200 flex items-center gap-1.5">
+          <i class="ph-bold ph-wrench"></i> How to unblock Chrome on your tablet in 15 seconds:
+        </p>
+        <ol class="list-decimal list-inside space-y-1.5 text-slate-300 text-[11px] leading-relaxed">
+          <li>Look at the top URL bar in Chrome on your tablet and tap the <strong>Page Info icon</strong> (slider icon <i class="ph ph-sliders-horizontal"></i> or tune icon next to the address).</li>
+          <li>Tap <strong>"Permissions"</strong> &rarr; find <strong>Microphone</strong> &rarr; switch it from <em>Blocked</em> to <strong>"Allow"</strong> or tap <strong>"Reset permissions"</strong>.</li>
+          <li>If opened as a local file (<span class="font-mono text-cyan-300">file://</span>), Chrome strictly blocks audio APIs. Use the <strong>Chrome Localhost Flag fix</strong> below or an HTTP server.</li>
+        </ol>
+      </div>
+
+      <div class="flex flex-wrap gap-2.5 pt-1">
+        <button id="recheckPermBtn" class="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-xl text-xs transition shadow flex items-center gap-1.5">
+          <i class="ph-bold ph-arrows-clockwise"></i> Re-test Permission Now
+        </button>
+        <button id="chromeFlagGuideBtn" class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium rounded-xl text-xs border border-slate-700 transition flex items-center gap-1.5">
+          <i class="ph-bold ph-flag"></i> Open Chrome Flags Guide (for Local IP / file://)
+        </button>
+      </div>
+    </div>
+
     <!-- Permission Warning Banner for Tablets (Hidden by default, shown if permission is blocked/not prompted) -->
     <div id="permissionNotice" class="hidden bg-amber-950/50 border border-amber-600/40 rounded-2xl p-4 text-xs text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
       <div class="flex items-center gap-3">
@@ -213,6 +273,9 @@
           <button id="directPromptBtn" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 flex items-center gap-1.5 transition">
             <i class="ph-bold ph-hand-tap"></i> Trigger Permission Dialog
           </button>
+          <button id="diagnoseBtn" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cyan-300 rounded-lg border border-slate-700 flex items-center gap-1.5 transition">
+            <i class="ph-bold ph-activity"></i> Run Diagnostic
+          </button>
         </div>
       </div>
     </div>
@@ -270,6 +333,40 @@
     </div>
   </div>
 
+  <!-- Chrome Flags Modal for Non-HTTPS / file:// Execution -->
+  <div id="flagsModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative">
+      <button id="closeFlagsModalBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="ph-bold ph-x text-xl"></i>
+      </button>
+      <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="ph-bold ph-flag-banner text-amber-400"></i>
+        Bypassing Chrome's Tablet Insecure Origin Block
+      </h3>
+      <div class="mt-4 space-y-3 text-xs text-slate-300 leading-relaxed">
+        <p>
+          Android Chrome has a hardcoded security rule: <strong>Microphone requests on unencrypted addresses (like <span class="font-mono text-amber-300">file:///</span> or <span class="font-mono text-amber-300">http://192.168.x.x</span>) are instantly denied without ever prompting the user</strong>.
+        </p>
+        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+          <p class="font-semibold text-white">To whitelist your compiler / tablet IP in Chrome:</p>
+          <ol class="list-decimal list-inside space-y-1 text-slate-400 font-mono text-[11px]">
+            <li>Open a new tab in Chrome on your tablet.</li>
+            <li>Type <strong class="text-cyan-300">chrome://flags</strong> in the URL address bar and press Enter.</li>
+            <li>In the search box, search for: <strong class="text-white">unsafely-treat-insecure-origin-as-secure</strong></li>
+            <li>Enable it and paste the URL of this page (e.g. <span id="currentOriginSnippet" class="text-cyan-400"></span>).</li>
+            <li>Tap <strong>Relaunch</strong> at the bottom of Chrome.</li>
+          </ol>
+        </div>
+        <p class="text-slate-400 text-[11px]">
+          Alternatively, run a simple local HTTPS server on your laptop (e.g., using <span class="font-mono text-slate-200">npx local-ssl-proxy</span> or Python) and access it via HTTPS on your tablet.
+        </p>
+      </div>
+      <button id="flagsModalDoneBtn" class="mt-5 w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-medium text-white transition text-xs border border-slate-700">
+        Close Guide
+      </button>
+    </div>
+  </div>
+
   <!-- Notification Toast -->
   <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-slate-800 text-white border border-slate-700 text-xs shadow-xl translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 z-50">
     <i class="ph-bold ph-info text-cyan-400 text-base" id="toastIcon"></i>
@@ -312,11 +409,34 @@
     const grantPermBtn = document.getElementById('grantPermBtn');
     const directPromptBtn = document.getElementById('directPromptBtn');
     
+    // Auto-deny Diagnostic elements
+    const autoDenyWarningBox = document.getElementById('autoDenyWarningBox');
+    const diagProtocolVal = document.getElementById('diagProtocolVal');
+    const diagProtocolHint = document.getElementById('diagProtocolHint');
+    const diagSitePermVal = document.getElementById('diagSitePermVal');
+    const recheckPermBtn = document.getElementById('recheckPermBtn');
+    const diagnoseBtn = document.getElementById('diagnoseBtn');
+    const chromeFlagGuideBtn = document.getElementById('chromeFlagGuideBtn');
+    const flagsModal = document.getElementById('flagsModal');
+    const closeFlagsModalBtn = document.getElementById('closeFlagsModalBtn');
+    const flagsModalDoneBtn = document.getElementById('flagsModalDoneBtn');
+    const currentOriginSnippet = document.getElementById('currentOriginSnippet');
+
     // Help Modal References
     const helpModal = document.getElementById('helpModal');
     const helpModalBtn = document.getElementById('helpModalBtn');
     const closeHelpBtn = document.getElementById('closeHelpBtn');
     const modalGotItBtn = document.getElementById('modalGotItBtn');
+
+    // Flags Modal Events
+    if (chromeFlagGuideBtn) {
+      chromeFlagGuideBtn.addEventListener('click', () => {
+        currentOriginSnippet.textContent = window.location.origin || window.location.href;
+        flagsModal.classList.remove('hidden');
+      });
+    }
+    if (closeFlagsModalBtn) closeFlagsModalBtn.addEventListener('click', () => flagsModal.classList.add('hidden'));
+    if (flagsModalDoneBtn) flagsModalDoneBtn.addEventListener('click', () => flagsModal.classList.add('hidden'));
 
     // Show toast message
     function showToast(msg, isError = false) {
@@ -348,35 +468,112 @@
     resizeCanvas();
 
     // Verify if environment is a secure context (Mobile Chrome blocks mic on non-secure HTTP except localhost)
-    function checkSecureContext() {
-      if (window.isSecureContext === false && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-        permissionNotice.classList.remove('hidden');
-        showToast('Chrome requires HTTPS or localhost to prompt for microphone permissions on tablets', true);
+    async function checkSecureContextAndPermissions() {
+      const isHttps = window.location.protocol === 'https:';
+      const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const isFile = window.location.protocol === 'file:';
+
+      // 1. Check Protocol Security
+      if (isHttps || isLocal) {
+        diagProtocolVal.textContent = isHttps ? "Secure (HTTPS)" : "Secure (Localhost)";
+        diagProtocolVal.className = "font-mono font-bold mt-1 text-emerald-400";
+        diagProtocolHint.textContent = "Supported by Chrome policy";
+      } else if (isFile) {
+        diagProtocolVal.textContent = "Insecure (file://)";
+        diagProtocolVal.className = "font-mono font-bold mt-1 text-rose-400";
+        diagProtocolHint.textContent = "Chrome auto-denies file:// microphone!";
+        autoDenyWarningBox.classList.remove('hidden');
+      } else {
+        diagProtocolVal.textContent = "Insecure (HTTP)";
+        diagProtocolVal.className = "font-mono font-bold mt-1 text-rose-400";
+        diagProtocolHint.textContent = "Chrome auto-denies unencrypted HTTP";
+        autoDenyWarningBox.classList.remove('hidden');
+      }
+
+      // 2. Query Permissions API if supported
+      if (navigator.permissions && navigator.permissions.query) {
+        try {
+          const status = await navigator.permissions.query({ name: 'microphone' });
+          handlePermState(status.state);
+          status.onchange = () => handlePermState(status.state);
+        } catch (e) {
+          diagSitePermVal.textContent = "Unknown (Check UI)";
+          diagSitePermVal.className = "font-mono font-bold mt-1 text-slate-400";
+        }
+      } else {
+        diagSitePermVal.textContent = "Not Queried";
+      }
+    }
+
+    function handlePermState(state) {
+      if (state === 'denied') {
+        diagSitePermVal.textContent = "BLOCKED / DENIED";
+        diagSitePermVal.className = "font-mono font-bold mt-1 text-rose-400";
+        autoDenyWarningBox.classList.remove('hidden');
+      } else if (state === 'granted') {
+        diagSitePermVal.textContent = "ALLOWED (Ready)";
+        diagSitePermVal.className = "font-mono font-bold mt-1 text-emerald-400";
+        autoDenyWarningBox.classList.add('hidden');
+        permissionNotice.classList.add('hidden');
+      } else {
+        diagSitePermVal.textContent = "PROMPT (Needs Tap)";
+        diagSitePermVal.className = "font-mono font-bold mt-1 text-amber-300";
       }
     }
 
     // Trigger permission explicitly with a direct user touch gesture
     async function triggerPermissionDialog() {
+      // Diagnostic check before requesting
+      await checkSecureContextAndPermissions();
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        autoDenyWarningBox.classList.remove('hidden');
+        showToast('getUserMedia API not available in this context (check HTTPS/flags)', true);
+        return;
+      }
+
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        // Release immediate test stream
+        // Simple minimal audio constraint to guarantee triggering standard Chrome prompt
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: { 
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          } 
+        });
+
+        // If we reach here, permission succeeded!
         stream.getTracks().forEach(track => track.stop());
         permissionNotice.classList.add('hidden');
-        showToast('Microphone access granted!');
+        autoDenyWarningBox.classList.add('hidden');
+        handlePermState('granted');
+        showToast('Microphone access successfully granted!');
         await updateDeviceList();
       } catch (err) {
         console.warn('Direct permission prompt failed:', err);
-        permissionNotice.classList.remove('hidden');
+        autoDenyWarningBox.classList.remove('hidden');
+
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          showToast('Permission was denied. Please allow microphone in Chrome site settings.', true);
+          handlePermState('denied');
+          showToast('Chrome auto-denied: site permission is blocked or insecure origin', true);
+        } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+          showToast('No audio input hardware or aux adapter detected on tablet', true);
         } else {
-          showToast(`Permission error: ${err.message}`, true);
+          showToast(`Permission error: ${err.name} - ${err.message}`, true);
         }
       }
     }
 
     grantPermBtn.addEventListener('click', triggerPermissionDialog);
     directPromptBtn.addEventListener('click', triggerPermissionDialog);
+    if (recheckPermBtn) recheckPermBtn.addEventListener('click', triggerPermissionDialog);
+    if (diagnoseBtn) {
+      diagnoseBtn.addEventListener('click', async () => {
+        await checkSecureContextAndPermissions();
+        autoDenyWarningBox.classList.toggle('hidden');
+        showToast('Diagnostic refreshed');
+      });
+    }
 
     // Populate Available Input and Output Audio Devices
     async function updateDeviceList() {
@@ -540,8 +737,8 @@
       } catch (err) {
         console.error('Audio Passthrough Start Failed:', err);
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          permissionNotice.classList.remove('hidden');
-          showToast('Microphone permission denied. Check tablet Chrome settings.', true);
+          autoDenyWarningBox.classList.remove('hidden');
+          showToast('Chrome auto-denied: unblock in Chrome site settings or fix HTTPS.', true);
         } else {
           showToast(`Could not start: ${err.message || 'Error initializing audio'}`, true);
         }
@@ -729,7 +926,7 @@
     // Initialize list on mount
     window.addEventListener('load', () => {
       resizeCanvas();
-      checkSecureContext();
+      checkSecureContextAndPermissions();
       updateDeviceList();
     });
   </script>
