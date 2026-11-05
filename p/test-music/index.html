@@ -75,6 +75,20 @@
       </div>
     </div>
 
+    <!-- Permission Warning Banner for Tablets (Hidden by default, shown if permission is blocked/not prompted) -->
+    <div id="permissionNotice" class="hidden bg-amber-950/50 border border-amber-600/40 rounded-2xl p-4 text-xs text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <i class="ph-bold ph-shield-warning text-amber-400 text-xl flex-shrink-0"></i>
+        <div>
+          <span class="font-bold text-amber-300">Tablet Microphone Permission Blocked or Missing HTTPS</span>
+          <p class="text-amber-200/80 mt-0.5">Mobile browsers (especially Chrome/Google on tablets) require a direct tap or a secure context (<span class="font-mono bg-amber-900/60 px-1 py-0.5 rounded">https://</span> or <span class="font-mono bg-amber-900/60 px-1 py-0.5 rounded">localhost</span>) to show the microphone permission dialog.</p>
+        </div>
+      </div>
+      <button id="grantPermBtn" class="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-medium rounded-xl text-xs whitespace-nowrap shadow transition">
+        Request Permission Now
+      </button>
+    </div>
+
     <!-- Master Action Controls -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       
@@ -129,18 +143,41 @@
       
       <!-- Input Device Selector -->
       <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5">
-        <div class="flex items-center gap-2 mb-3">
-          <i class="ph-bold ph-plug text-cyan-400 text-lg"></i>
-          <h3 class="font-medium text-sm text-slate-200">Input Source (Laptop Connection)</h3>
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-microphone text-cyan-400 text-lg"></i>
+            <h3 class="font-medium text-sm text-slate-200">Select Input Source</h3>
+          </div>
+          <span class="text-[11px] font-mono text-cyan-400/80 bg-cyan-950/60 border border-cyan-800/50 px-2 py-0.5 rounded-full">Audio In</span>
         </div>
         <select id="audioSourceSelect" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500">
           <option value="">Default (Auto-detect Aux/Line In)</option>
         </select>
         <p class="text-xs text-slate-500 mt-2">
-          Select your USB Audio adapter, TRRS Line-in, or external audio device.
+          Select your Aux cord adapter, TRRS Line-in, or external audio interface.
         </p>
       </div>
 
+      <!-- Output Device Selector (New Speaker Target Selection) -->
+      <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <i class="ph-bold ph-speaker-simple-high text-emerald-400 text-lg"></i>
+            <h3 class="font-medium text-sm text-slate-200">Select Output Source (Speaker)</h3>
+          </div>
+          <span class="text-[11px] font-mono text-emerald-400/80 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full">Audio Out</span>
+        </div>
+        <select id="audioOutputSelect" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-emerald-500">
+          <option value="">Default Tablet Speaker</option>
+        </select>
+        <p id="outputSupportText" class="text-xs text-slate-500 mt-2">
+          Choose which internal or external tablet speaker renders incoming sound.
+        </p>
+      </div>
+    </div>
+
+    <!-- Acoustic Filters & Settings Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <!-- Audio Processing Filters -->
       <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5">
         <div class="flex items-center gap-2 mb-3">
@@ -161,6 +198,22 @@
         <p class="text-[11px] text-slate-500 mt-2">
           Keep filters disabled for raw musical fidelity without voice suppression.
         </p>
+      </div>
+
+      <!-- Quick Troublehooting Box -->
+      <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="ph-bold ph-info text-amber-400 text-lg"></i>
+          <h3 class="font-medium text-sm text-slate-200">Tablet Permission Tips</h3>
+        </div>
+        <p class="text-xs text-slate-400 leading-relaxed">
+          If Chrome doesn't prompt for permission: Tap the <strong>lock / tune icon</strong> in the Chrome address bar &rarr; Site settings &rarr; Set <strong>Microphone to "Allow"</strong>.
+        </p>
+        <div class="mt-3 flex gap-2">
+          <button id="directPromptBtn" class="text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 flex items-center gap-1.5 transition">
+            <i class="ph-bold ph-hand-tap"></i> Trigger Permission Dialog
+          </button>
+        </div>
       </div>
     </div>
 
@@ -230,6 +283,7 @@
     let sourceNode = null;
     let gainNode = null;
     let analyserNode = null;
+    let audioOutputElement = null; // Used for setSinkId output device routing
     let animationFrameId = null;
     let isRunning = false;
 
@@ -248,10 +302,15 @@
     const volumeLevelBar = document.getElementById('volumeLevelBar');
     const dbDisplay = document.getElementById('dbDisplay');
     const audioSourceSelect = document.getElementById('audioSourceSelect');
+    const audioOutputSelect = document.getElementById('audioOutputSelect');
+    const outputSupportText = document.getElementById('outputSupportText');
     const refreshDevicesBtn = document.getElementById('refreshDevicesBtn');
     const lowLatencyToggle = document.getElementById('lowLatencyToggle');
     const echoCancelToggle = document.getElementById('echoCancelToggle');
     const noiseSupprToggle = document.getElementById('noiseSupprToggle');
+    const permissionNotice = document.getElementById('permissionNotice');
+    const grantPermBtn = document.getElementById('grantPermBtn');
+    const directPromptBtn = document.getElementById('directPromptBtn');
     
     // Help Modal References
     const helpModal = document.getElementById('helpModal');
@@ -288,7 +347,38 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Populate Available Input Devices
+    // Verify if environment is a secure context (Mobile Chrome blocks mic on non-secure HTTP except localhost)
+    function checkSecureContext() {
+      if (window.isSecureContext === false && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+        permissionNotice.classList.remove('hidden');
+        showToast('Chrome requires HTTPS or localhost to prompt for microphone permissions on tablets', true);
+      }
+    }
+
+    // Trigger permission explicitly with a direct user touch gesture
+    async function triggerPermissionDialog() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        // Release immediate test stream
+        stream.getTracks().forEach(track => track.stop());
+        permissionNotice.classList.add('hidden');
+        showToast('Microphone access granted!');
+        await updateDeviceList();
+      } catch (err) {
+        console.warn('Direct permission prompt failed:', err);
+        permissionNotice.classList.remove('hidden');
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          showToast('Permission was denied. Please allow microphone in Chrome site settings.', true);
+        } else {
+          showToast(`Permission error: ${err.message}`, true);
+        }
+      }
+    }
+
+    grantPermBtn.addEventListener('click', triggerPermissionDialog);
+    directPromptBtn.addEventListener('click', triggerPermissionDialog);
+
+    // Populate Available Input and Output Audio Devices
     async function updateDeviceList() {
       try {
         if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
@@ -297,10 +387,10 @@
         }
 
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioInputs = devices.filter(device => device.kind === 'audioinput');
         
-        // Preserve current selection
-        const currentVal = audioSourceSelect.value;
+        // 1. Inputs
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        const currentInputVal = audioSourceSelect.value;
         audioSourceSelect.innerHTML = '<option value="">Default (Auto Line-in/Mic)</option>';
 
         audioInputs.forEach((device, index) => {
@@ -310,11 +400,57 @@
           audioSourceSelect.appendChild(option);
         });
 
-        if (currentVal) {
-          audioSourceSelect.value = currentVal;
+        if (currentInputVal) {
+          audioSourceSelect.value = currentInputVal;
         }
+
+        // 2. Outputs (Speakers)
+        const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+        const currentOutputVal = audioOutputSelect.value;
+        audioOutputSelect.innerHTML = '<option value="">Default Tablet Speaker</option>';
+
+        if (audioOutputs.length > 0) {
+          audioOutputs.forEach((device, index) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `Speaker ${index + 1}`;
+            audioOutputSelect.appendChild(option);
+          });
+
+          if (currentOutputVal) {
+            audioOutputSelect.value = currentOutputVal;
+          }
+          outputSupportText.textContent = `${audioOutputs.length} audio speaker destination(s) detected.`;
+        } else {
+          outputSupportText.textContent = 'Audio sink selection using default system speaker.';
+        }
+
       } catch (err) {
         console.error('Error fetching audio devices:', err);
+      }
+    }
+
+    // Apply chosen output sink to AudioContext / Audio Element
+    async function applyAudioSink(deviceId) {
+      if (!audioCtx) return;
+      try {
+        // Modern AudioContext.setSinkId (supported in modern Chrome / Chromium)
+        if (typeof audioCtx.setSinkId === 'function') {
+          await audioCtx.setSinkId(deviceId || '');
+          showToast('Switched output speaker destination');
+          return;
+        }
+
+        // Fallback using HTMLAudioElement with setSinkId
+        if (audioOutputElement && typeof audioOutputElement.setSinkId === 'function') {
+          await audioOutputElement.setSinkId(deviceId || '');
+          showToast('Switched output speaker destination');
+        } else {
+          outputSupportText.textContent = 'Hardware speaker routing is handled by your tablet OS default.';
+        }
+      } catch (err) {
+        console.warn('Failed to switch audio sink:', err);
+        showToast('Could not change speaker device on this browser', true);
       }
     }
 
@@ -332,10 +468,10 @@
         audioCtx = new AudioContextClass({ latencyHint });
 
         // Build Audio Constraints for high fidelity music routing
-        const selectedDeviceId = audioSourceSelect.value;
+        const selectedInputId = audioSourceSelect.value;
         const constraints = {
           audio: {
-            deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+            deviceId: selectedInputId ? { exact: selectedInputId } : undefined,
             // Disable default speech filters for raw musical sound:
             echoCancellation: echoCancelToggle.checked,
             noiseSuppression: noiseSupprToggle.checked,
@@ -345,8 +481,9 @@
           }
         };
 
-        // Capture laptop line-in
+        // Capture laptop line-in (User activation event ensures permission prompt on tablet)
         mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        permissionNotice.classList.add('hidden');
 
         // Resume context in case tablet policies paused it
         if (audioCtx.state === 'suspended') {
@@ -365,23 +502,49 @@
         // Routing connections
         sourceNode.connect(gainNode);
         gainNode.connect(analyserNode);
-        analyserNode.connect(audioCtx.destination); // Routes sound directly to tablet speakers!
+
+        // Apply custom speaker selection if chosen
+        const selectedOutputId = audioOutputSelect.value;
+        if (typeof audioCtx.setSinkId === 'function' && selectedOutputId) {
+          await audioCtx.setSinkId(selectedOutputId);
+          analyserNode.connect(audioCtx.destination);
+        } else if (typeof HTMLMediaElement.prototype.setSinkId === 'function' && selectedOutputId) {
+          // Alternative routing via MediaStreamAudioDestinationNode -> <audio> element
+          const destNode = audioCtx.createMediaStreamDestination();
+          analyserNode.connect(destNode);
+
+          if (!audioOutputElement) {
+            audioOutputElement = new Audio();
+            audioOutputElement.autoplay = true;
+          }
+          audioOutputElement.srcObject = destNode.stream;
+          await audioOutputElement.setSinkId(selectedOutputId);
+          await audioOutputElement.play();
+        } else {
+          // Standard destination routing
+          analyserNode.connect(audioCtx.destination);
+        }
 
         // Update UI state
         isRunning = true;
         updateUI(true);
         canvasOverlay.style.opacity = '0';
-        showToast('Connected! Sound is now routing to Tablet Speakers.');
+        showToast('Connected! Sound is now routing to chosen speaker.');
 
-        // Refresh devices after permission is granted so device names appear
-        updateDeviceList();
+        // Refresh devices after permission is granted so real device labels show up
+        await updateDeviceList();
 
         // Start real-time visualization loop
         drawVisualizer();
 
       } catch (err) {
         console.error('Audio Passthrough Start Failed:', err);
-        showToast(`Could not start: ${err.message || 'Permission denied'}`, true);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          permissionNotice.classList.remove('hidden');
+          showToast('Microphone permission denied. Check tablet Chrome settings.', true);
+        } else {
+          showToast(`Could not start: ${err.message || 'Error initializing audio'}`, true);
+        }
         stopAudioPassthrough();
       }
     }
@@ -398,6 +561,11 @@
       if (mediaStream) {
         mediaStream.getTracks().forEach(track => track.stop());
         mediaStream = null;
+      }
+
+      if (audioOutputElement) {
+        audioOutputElement.pause();
+        audioOutputElement.srcObject = null;
       }
 
       if (sourceNode) {
@@ -502,7 +670,7 @@
       }
     }
 
-    // Toggle Button Event
+    // Toggle Button Event (Must be direct touch / click for tablet permissions)
     toggleBtn.addEventListener('click', () => {
       if (isRunning) {
         stopAudioPassthrough();
@@ -523,10 +691,15 @@
     // Input Device Change Listener
     audioSourceSelect.addEventListener('change', () => {
       if (isRunning) {
-        // Restart stream with new device
         stopAudioPassthrough();
         startAudioPassthrough();
       }
+    });
+
+    // Output Speaker Device Change Listener
+    audioOutputSelect.addEventListener('change', async (e) => {
+      const sinkId = e.target.value;
+      await applyAudioSink(sinkId);
     });
 
     // Refresh audio inputs button
@@ -556,6 +729,7 @@
     // Initialize list on mount
     window.addEventListener('load', () => {
       resizeCanvas();
+      checkSecureContext();
       updateDeviceList();
     });
   </script>
