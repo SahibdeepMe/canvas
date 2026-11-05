@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tablet Aux Speaker Receiver</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons for clean audio controls UI -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <style>
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.8; transform: scale(1.05); }
+    }
+    .glow-active {
+      animation: pulse-glow 2.5s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans select-none antialiased">
+
+  <!-- Top Header Navigation -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-20">
+    <div class="max-w-5xl mx-auto px-4 py-3.5 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+          <i class="ph-bold ph-speaker-high text-xl text-white"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg tracking-tight leading-tight">AuxCast Receiver</h1>
+          <p class="text-xs text-slate-400">Tablet Audio Passthrough & Speaker Station</p>
+        </div>
+      </div>
+
+      <!-- Live Connection Status Pill -->
+      <div class="flex items-center space-x-2">
+        <span id="statusIndicator" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+          <span class="w-2 h-2 mr-2 rounded-full bg-slate-500" id="statusDot"></span>
+          <span id="statusText">Standby</span>
+        </span>
+        <button id="helpModalBtn" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+          <i class="ph-bold ph-question text-lg"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content View -->
+  <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+    <!-- Live Visualizer & Status Banner -->
+    <div class="relative bg-gradient-to-b from-slate-900 to-slate-950 rounded-2xl border border-slate-800/80 p-5 shadow-2xl overflow-hidden flex flex-col items-center">
+      
+      <!-- Visualizer Canvas -->
+      <div class="w-full relative h-48 md:h-60 rounded-xl overflow-hidden bg-slate-950/70 border border-slate-800/60 flex items-center justify-center">
+        <canvas id="visualizerCanvas" class="w-full h-full block"></canvas>
+        
+        <!-- Standby Placeholder Overlay -->
+        <div id="canvasOverlay" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none transition-opacity duration-300">
+          <div class="w-14 h-14 rounded-full bg-slate-900 border border-slate-700/60 flex items-center justify-center mb-3 text-cyan-400">
+            <i class="ph-duotone ph-wave-sine text-2xl"></i>
+          </div>
+          <p class="text-sm font-medium text-slate-300">Audio passthrough is stopped</p>
+          <p class="text-xs text-slate-500 mt-1">Tap "Activate Speaker Mode" below to route sound</p>
+        </div>
+      </div>
+
+      <!-- Audio Level Meters (Peak / VU) -->
+      <div class="w-full mt-4 flex items-center gap-3">
+        <span class="text-xs text-slate-400 font-mono w-14 text-right">VU Level</span>
+        <div class="flex-1 h-2.5 bg-slate-800 rounded-full overflow-hidden p-[2px]">
+          <div id="volumeLevelBar" class="h-full w-0 bg-gradient-to-r from-cyan-400 via-emerald-400 to-rose-500 rounded-full transition-all duration-75"></div>
+        </div>
+        <span id="dbDisplay" class="text-xs text-slate-400 font-mono w-12 text-left">-inf dB</span>
+      </div>
+    </div>
+
+    <!-- Master Action Controls -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- Start / Stop Button Card -->
+      <div class="md:col-span-2 bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 class="font-semibold text-base text-white">Speaker Engine</h2>
+            <p class="text-xs text-slate-400">Captures line-in audio from laptop & outputs to tablet speakers</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <label class="text-xs text-slate-400">Low-Latency Mode</label>
+            <input type="checkbox" id="lowLatencyToggle" checked class="accent-cyan-500 rounded cursor-pointer w-4 h-4">
+          </div>
+        </div>
+
+        <!-- Start/Stop Primary Button -->
+        <div class="mt-6 flex flex-col sm:flex-row gap-3">
+          <button id="toggleAudioBtn" class="flex-1 py-4 px-6 rounded-xl font-bold flex items-center justify-center gap-3 text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 active:scale-[0.99] transition shadow-lg shadow-cyan-600/30">
+            <i class="ph-bold ph-play text-xl" id="btnIcon"></i>
+            <span id="btnLabel">Activate Speaker Mode</span>
+          </button>
+
+          <button id="refreshDevicesBtn" title="Scan for newly plugged Aux/USB inputs" class="py-4 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition flex items-center justify-center gap-2 border border-slate-700">
+            <i class="ph-bold ph-arrows-clockwise text-lg"></i>
+            <span class="sm:hidden text-sm">Rescan Ports</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Gain / Volume Booster Card -->
+      <div class="bg-slate-900/80 border border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <h2 class="font-semibold text-base text-white">Pre-Amp Booster</h2>
+          <span id="gainValText" class="text-sm font-mono font-bold text-cyan-400">100%</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Boost laptop audio signal if it arrives quiet</p>
+
+        <div class="mt-6 space-y-3">
+          <input type="range" id="gainSlider" min="0" max="3" step="0.05" value="1" class="w-full accent-cyan-500 cursor-pointer">
+          <div class="flex justify-between text-[11px] text-slate-500 font-mono">
+            <span>Mute</span>
+            <span>100% (Normal)</span>
+            <span>300% (Boost)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Source & Settings Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- Input Device Selector -->
+      <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="ph-bold ph-plug text-cyan-400 text-lg"></i>
+          <h3 class="font-medium text-sm text-slate-200">Input Source (Laptop Connection)</h3>
+        </div>
+        <select id="audioSourceSelect" class="w-full bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-cyan-500">
+          <option value="">Default (Auto-detect Aux/Line In)</option>
+        </select>
+        <p class="text-xs text-slate-500 mt-2">
+          Select your USB Audio adapter, TRRS Line-in, or external audio device.
+        </p>
+      </div>
+
+      <!-- Audio Processing Filters -->
+      <div class="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-5">
+        <div class="flex items-center gap-2 mb-3">
+          <i class="ph-bold ph-sliders text-cyan-400 text-lg"></i>
+          <h3 class="font-medium text-sm text-slate-200">Acoustic Tuning</h3>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <label class="flex items-center space-x-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" id="echoCancelToggle" class="accent-cyan-500 rounded">
+            <span class="text-xs text-slate-300">Disable Echo Cancel</span>
+          </label>
+          <label class="flex items-center space-x-2 bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/60 cursor-pointer hover:border-slate-700">
+            <input type="checkbox" id="noiseSupprToggle" class="accent-cyan-500 rounded">
+            <span class="text-xs text-slate-300">Disable Noise Filter</span>
+          </label>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-2">
+          Keep filters disabled for raw musical fidelity without voice suppression.
+        </p>
+      </div>
+    </div>
+
+    <!-- Setup Guide Box -->
+    <div class="bg-slate-900/40 border border-slate-800/60 rounded-2xl p-5">
+      <h3 class="text-sm font-semibold text-slate-300 flex items-center gap-2">
+        <i class="ph-bold ph-info text-amber-400"></i>
+        How to physically wire laptop to tablet
+      </h3>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3 text-xs text-slate-400">
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/50">
+          <span class="font-bold text-slate-200 block mb-1">1. USB-C Audio Dongle (Best)</span>
+          Plug a USB-C to 3.5mm input dongle into the tablet, then connect the laptop's aux cable directly into it.
+        </div>
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/50">
+          <span class="font-bold text-slate-200 block mb-1">2. TRRS Y-Splitter</span>
+          If your tablet has an aux jack, use a 4-pole TRRS splitter cable and plug your laptop into the <span class="text-cyan-400">Mic</span> port.
+        </div>
+        <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/50">
+          <span class="font-bold text-slate-200 block mb-1">3. Volume Calibration</span>
+          Set your laptop's output volume to ~60-70% to avoid clipping or distortion on the tablet's pre-amp.
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Help & Hardware Diagnostic Modal -->
+  <div id="helpModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative">
+      <button id="closeHelpBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+        <i class="ph-bold ph-x text-xl"></i>
+      </button>
+      <h3 class="text-lg font-bold text-white flex items-center gap-2">
+        <i class="ph-bold ph-wrench text-cyan-400"></i>
+        Hardware Aux Connection Guide
+      </h3>
+      <div class="mt-4 space-y-3 text-xs text-slate-300 leading-relaxed">
+        <p>
+          <strong class="text-white">Why doesn't a plain Aux cable work directly?</strong><br>
+          A standard 3.5mm audio jack on a tablet is configured strictly as an <strong>Audio Output</strong> for headphones. Plugging a standard male-to-male aux cord connects the laptop's output to the tablet's output, creating a clash.
+        </p>
+        <p>
+          <strong class="text-white">How this Web App receives sound:</strong><br>
+          This app taps into your tablet's Web Audio API and captures incoming sound through any connected <strong class="text-cyan-400">Microphone / Line-in</strong> channel and routes it straight through the tablet's built-in speaker amplifier with minimal latency.
+        </p>
+        <div class="p-3 bg-cyan-950/40 border border-cyan-800/50 rounded-xl text-cyan-300">
+          💡 <strong>Pro Tip:</strong> Ensure you grant the microphone permission prompt when prompted by your tablet's browser.
+        </div>
+      </div>
+      <button id="modalGotItBtn" class="mt-5 w-full py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 font-medium text-white transition text-xs">
+        Got it!
+      </button>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 px-4 py-3 rounded-xl bg-slate-800 text-white border border-slate-700 text-xs shadow-xl translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-2 z-50">
+    <i class="ph-bold ph-info text-cyan-400 text-base" id="toastIcon"></i>
+    <span id="toastMsg">Ready</span>
+  </div>
+
+  <script>
+    // Audio Context and Nodes
+    let audioCtx = null;
+    let mediaStream = null;
+    let sourceNode = null;
+    let gainNode = null;
+    let analyserNode = null;
+    let animationFrameId = null;
+    let isRunning = false;
+
+    // DOM References
+    const toggleBtn = document.getElementById('toggleAudioBtn');
+    const btnIcon = document.getElementById('btnIcon');
+    const btnLabel = document.getElementById('btnLabel');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const canvas = document.getElementById('visualizerCanvas');
+    const canvasCtx = canvas.getContext('2d');
+    const canvasOverlay = document.getElementById('canvasOverlay');
+    const gainSlider = document.getElementById('gainSlider');
+    const gainValText = document.getElementById('gainValText');
+    const volumeLevelBar = document.getElementById('volumeLevelBar');
+    const dbDisplay = document.getElementById('dbDisplay');
+    const audioSourceSelect = document.getElementById('audioSourceSelect');
+    const refreshDevicesBtn = document.getElementById('refreshDevicesBtn');
+    const lowLatencyToggle = document.getElementById('lowLatencyToggle');
+    const echoCancelToggle = document.getElementById('echoCancelToggle');
+    const noiseSupprToggle = document.getElementById('noiseSupprToggle');
+    
+    // Help Modal References
+    const helpModal = document.getElementById('helpModal');
+    const helpModalBtn = document.getElementById('helpModalBtn');
+    const closeHelpBtn = document.getElementById('closeHelpBtn');
+    const modalGotItBtn = document.getElementById('modalGotItBtn');
+
+    // Show toast message
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toastMsg');
+      const toastIcon = document.getElementById('toastIcon');
+      
+      toastMsg.textContent = msg;
+      toastIcon.className = isError ? "ph-bold ph-warning-circle text-rose-400 text-base" : "ph-bold ph-check-circle text-cyan-400 text-base";
+      
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    // Modal Events
+    helpModalBtn.addEventListener('click', () => helpModal.classList.remove('hidden'));
+    closeHelpBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+    modalGotItBtn.addEventListener('click', () => helpModal.classList.add('hidden'));
+
+    // Resize canvas dynamically to match layout
+    function resizeCanvas() {
+      if (!canvas) return;
+      canvas.width = canvas.parentElement.clientWidth * window.devicePixelRatio;
+      canvas.height = canvas.parentElement.clientHeight * window.devicePixelRatio;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Populate Available Input Devices
+    async function updateDeviceList() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+          showToast('MediaDevices API not supported on this browser', true);
+          return;
+        }
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        
+        // Preserve current selection
+        const currentVal = audioSourceSelect.value;
+        audioSourceSelect.innerHTML = '<option value="">Default (Auto Line-in/Mic)</option>';
+
+        audioInputs.forEach((device, index) => {
+          const option = document.createElement('option');
+          option.value = device.deviceId;
+          option.text = device.label || `Aux / Line In ${index + 1}`;
+          audioSourceSelect.appendChild(option);
+        });
+
+        if (currentVal) {
+          audioSourceSelect.value = currentVal;
+        }
+      } catch (err) {
+        console.error('Error fetching audio devices:', err);
+      }
+    }
+
+    // Initialize/Restart Audio Passthrough
+    async function startAudioPassthrough() {
+      try {
+        // Create AudioContext if not initialized or suspended
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) {
+          showToast('Web Audio is not supported on this tablet browser', true);
+          return;
+        }
+
+        const latencyHint = lowLatencyToggle.checked ? 'interactive' : 'playback';
+        audioCtx = new AudioContextClass({ latencyHint });
+
+        // Build Audio Constraints for high fidelity music routing
+        const selectedDeviceId = audioSourceSelect.value;
+        const constraints = {
+          audio: {
+            deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined,
+            // Disable default speech filters for raw musical sound:
+            echoCancellation: echoCancelToggle.checked,
+            noiseSuppression: noiseSupprToggle.checked,
+            autoGainControl: false,
+            channelCount: 2, // Attempt stereo capture if available
+            sampleRate: 48000
+          }
+        };
+
+        // Capture laptop line-in
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        // Resume context in case tablet policies paused it
+        if (audioCtx.state === 'suspended') {
+          await audioCtx.resume();
+        }
+
+        // Setup Audio Graph: Source -> Gain Node -> Analyser Node -> Speakers (destination)
+        sourceNode = audioCtx.createMediaStreamSource(mediaStream);
+        gainNode = audioCtx.createGain();
+        gainNode.gain.value = parseFloat(gainSlider.value);
+
+        analyserNode = audioCtx.createAnalyser();
+        analyserNode.fftSize = 512;
+        analyserNode.smoothingTimeConstant = 0.8;
+
+        // Routing connections
+        sourceNode.connect(gainNode);
+        gainNode.connect(analyserNode);
+        analyserNode.connect(audioCtx.destination); // Routes sound directly to tablet speakers!
+
+        // Update UI state
+        isRunning = true;
+        updateUI(true);
+        canvasOverlay.style.opacity = '0';
+        showToast('Connected! Sound is now routing to Tablet Speakers.');
+
+        // Refresh devices after permission is granted so device names appear
+        updateDeviceList();
+
+        // Start real-time visualization loop
+        drawVisualizer();
+
+      } catch (err) {
+        console.error('Audio Passthrough Start Failed:', err);
+        showToast(`Could not start: ${err.message || 'Permission denied'}`, true);
+        stopAudioPassthrough();
+      }
+    }
+
+    // Stop and teardown passthrough
+    function stopAudioPassthrough() {
+      isRunning = false;
+
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+
+      if (mediaStream) {
+        mediaStream.getTracks().forEach(track => track.stop());
+        mediaStream = null;
+      }
+
+      if (sourceNode) {
+        sourceNode.disconnect();
+        sourceNode = null;
+      }
+
+      if (gainNode) {
+        gainNode.disconnect();
+        gainNode = null;
+      }
+
+      if (analyserNode) {
+        analyserNode.disconnect();
+        analyserNode = null;
+      }
+
+      if (audioCtx && audioCtx.state !== 'closed') {
+        audioCtx.close();
+        audioCtx = null;
+      }
+
+      updateUI(false);
+      canvasOverlay.style.opacity = '1';
+      volumeLevelBar.style.width = '0%';
+      dbDisplay.textContent = '-inf dB';
+
+      // Clear canvas
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Visualizer rendering function (Frequency bars + Wave glow)
+    function drawVisualizer() {
+      if (!isRunning || !analyserNode) return;
+
+      const bufferLength = analyserNode.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      analyserNode.getByteFrequencyData(dataArray);
+
+      // Calculate instantaneous root-mean-square for VU meter
+      let sum = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        sum += dataArray[i];
+      }
+      const average = sum / bufferLength;
+      const normalizedPercent = Math.min(100, Math.round((average / 128) * 100));
+      
+      volumeLevelBar.style.width = `${normalizedPercent}%`;
+      
+      if (normalizedPercent > 0) {
+        const approxDb = Math.round(20 * Math.log10(average / 255));
+        dbDisplay.textContent = `${approxDb} dB`;
+      } else {
+        dbDisplay.textContent = '-inf dB';
+      }
+
+      // Draw canvas bars
+      canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const barWidth = (canvas.width / bufferLength) * 2.2;
+      let x = 0;
+
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = (dataArray[i] / 255) * canvas.height * 0.9;
+
+        // Visualizer color gradient (cyan to indigo)
+        const gradient = canvasCtx.createLinearGradient(0, canvas.height, 0, canvas.height - barHeight);
+        gradient.addColorStop(0, 'rgba(6, 182, 212, 0.4)');
+        gradient.addColorStop(0.5, 'rgba(59, 130, 246, 0.8)');
+        gradient.addColorStop(1, 'rgba(99, 102, 241, 1)');
+
+        canvasCtx.fillStyle = gradient;
+        canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+
+        x += barWidth + 2;
+        if (x > canvas.width) break;
+      }
+
+      animationFrameId = requestAnimationFrame(drawVisualizer);
+    }
+
+    // UI state helper
+    function updateUI(active) {
+      if (active) {
+        btnLabel.textContent = 'Stop Speaker Mode';
+        btnIcon.className = 'ph-bold ph-stop text-xl';
+        toggleBtn.classList.remove('from-cyan-500', 'to-blue-600', 'shadow-cyan-600/30');
+        toggleBtn.classList.add('from-rose-500', 'to-red-600', 'shadow-rose-600/30');
+
+        statusDot.className = 'w-2 h-2 mr-2 rounded-full bg-emerald-400 animate-pulse';
+        statusText.textContent = 'Speaker Active';
+        statusIndicator.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-950/80 text-emerald-400 border border-emerald-800';
+      } else {
+        btnLabel.textContent = 'Activate Speaker Mode';
+        btnIcon.className = 'ph-bold ph-play text-xl';
+        toggleBtn.classList.remove('from-rose-500', 'to-red-600', 'shadow-rose-600/30');
+        toggleBtn.classList.add('from-cyan-500', 'to-blue-600', 'shadow-cyan-600/30');
+
+        statusDot.className = 'w-2 h-2 mr-2 rounded-full bg-slate-500';
+        statusText.textContent = 'Standby';
+        statusIndicator.className = 'inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700';
+      }
+    }
+
+    // Toggle Button Event
+    toggleBtn.addEventListener('click', () => {
+      if (isRunning) {
+        stopAudioPassthrough();
+      } else {
+        startAudioPassthrough();
+      }
+    });
+
+    // Volume Gain Slider Event
+    gainSlider.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      gainValText.textContent = `${Math.round(val * 100)}%`;
+      if (gainNode) {
+        gainNode.gain.setValueAtTime(val, audioCtx.currentTime);
+      }
+    });
+
+    // Input Device Change Listener
+    audioSourceSelect.addEventListener('change', () => {
+      if (isRunning) {
+        // Restart stream with new device
+        stopAudioPassthrough();
+        startAudioPassthrough();
+      }
+    });
+
+    // Refresh audio inputs button
+    refreshDevicesBtn.addEventListener('click', async () => {
+      await updateDeviceList();
+      showToast('Scanned for connected audio hardware');
+    });
+
+    // Filter toggles should auto-apply if active
+    [echoCancelToggle, noiseSupprToggle, lowLatencyToggle].forEach(toggle => {
+      toggle.addEventListener('change', () => {
+        if (isRunning) {
+          stopAudioPassthrough();
+          startAudioPassthrough();
+        }
+      });
+    });
+
+    // Device plugged/unplugged event listener
+    if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange !== undefined) {
+      navigator.mediaDevices.ondevicechange = () => {
+        updateDeviceList();
+        showToast('Audio hardware change detected');
+      };
+    }
+
+    // Initialize list on mount
+    window.addEventListener('load', () => {
+      resizeCanvas();
+      updateDeviceList();
+    });
+  </script>
+</body>
+</html>
